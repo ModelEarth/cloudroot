@@ -1,6 +1,6 @@
 # LLM Proxy Worker
 
-## Cloudflare + LangChain + GitHub Secrets
+## Cloudflare Worker + GitHub Secrets
 
 A Cloudflare Worker that holds your LLM API keys server-side and exposes a
 single `/api/chat` endpoint. Your frontend JS calls the Worker — it never
@@ -17,43 +17,13 @@ frontend JS  --->  Cloudflare Worker (/api/chat)  --->  Anthropic / OpenAI
 
 GitHub Secrets are provided by GitHub Actions runners during a workflow run — they are never sent to a browser. This repo uses them to configure Cloudflare (a service that *can* safely hold runtime secrets and serve requests), not to hand keys to frontend code.
 
-## 1. Get your API keys
+Getting the 4 keys/credentials this needs (`ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and adding
+them to GitHub by hand is covered in
+[automation/manual.md](../automation/manual.md) ("Manual Alternative") — or
+use `sync-secrets.sh` below if you keep them in a shared `docker/.env` file.
 
-- Anthropic: [console.anthropic.com](https://console.anthropic.com) → **API Keys**
-- OpenAI: [platform.openai.com](https://platform.openai.com/api-keys) → **API Keys**
-
-## 2. Get your Cloudflare credentials
-
-1. Cloudflare dashboard → **My Profile → API Tokens → Create Token**
-   - Use the "Edit Cloudflare Workers" template, scoped to your account.
-2. Note your **Account ID** (right sidebar of the Cloudflare dashboard, or
-   `Workers & Pages` overview page) — or skip this if you'll use
-   `sync-secrets.sh` below: it falls back to reading the Account ID from
-   `wrangler whoami` when it's not in your `.env` file (after a one-time
-   `npx wrangler login`).
-
-## 3. Add secrets to GitHub
-
-In your repo: **Settings → Secrets and variables → Actions → New repository secret**
-
-Add each of these (name must match exactly):
-
-| Secret name             | Value                                  |
-|--------------------------|-----------------------------------------|
-| `ANTHROPIC_API_KEY`      | Your Anthropic key                     |
-| `OPENAI_API_KEY`         | Your OpenAI key                        |
-| `CLOUDFLARE_API_TOKEN`   | The token you created in step 2        |
-| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account ID             |
-
-Since this is a private repo with multiple collaborators: repo secrets are
-only visible to workflows, never in logs or to collaborators via the UI —
-but anyone with **write access** can modify a workflow file to print or
-exfiltrate a secret in a run they trigger. If you want tighter control,
-use **Environments** (Settings → Environments → New environment → add the
-secrets there instead of at repo level) and require reviewers to approve
-deployments that use them.
-
-## 3a. Or: sync secrets from `docker/.env` with `sync-secrets.sh`
+## Sync secrets from `docker/.env` with `sync-secrets.sh`
 
 If you already keep these values in a shared `docker/.env` file (the local
 dev env file used across ModelEarth's repos), you don't have to copy them
@@ -62,10 +32,15 @@ to type out the `gh` commands each time — a fixed script can't
 misread the instructions, forget a flag, or accidentally echo a secret,
 which a freshly-prompted agent could.
 
+The script lives in `CloudRoot/automation/`, not in this `worker/` folder —
+it's shared across repos, not specific to this one worker (see the comment
+at the top of the script for why). Its default paths don't resolve from
+CloudRoot regardless of where you run it from (see below), so always pass
+both arguments explicitly:
+
 ```bash
-cd worker
-./sync-secrets.sh                              # defaults: ../docker/.env, ModelEarth/CloudRoot
-./sync-secrets.sh path/to/.env owner/repo       # or override either
+./automation/sync-secrets.sh /path/to/docker/.env ModelEarth/CloudRoot
+./automation/sync-secrets.sh /path/to/docker/.env owner/other-repo   # for another repo
 ```
 
 It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and
@@ -90,7 +65,7 @@ This only touches the four secrets this worker needs — `docker/.env` holds
 many more keys for other services (the Rust API, Arts Engine, Sanity,
 Better Auth, Supabase, etc.) that this prompt intentionally leaves alone.
 
-## 3b. Testing from a fork
+## Testing from a fork
 
 Verified end to end on 22 Aug 2026 against a fork and a personal Cloudflare
 account. Three things differ from the main-repo path above.
@@ -116,9 +91,10 @@ gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/CloudRoot --body $token
 Repeat for `CLOUDFLARE_ACCOUNT_ID`. Reading from the file rather than typing
 the value keeps it out of shell history.
 
-**The script's defaults do not resolve from CloudRoot.** `../docker/.env`
-assumes a `docker` directory beside `worker`, which CloudRoot does not have —
-`docker` lives in the `webroot` checkout. Pass both arguments explicitly.
+**The script's defaults do not resolve from CloudRoot.** Its built-in default
+path assumes a `docker` directory beside wherever it's run from, which
+CloudRoot does not have — `docker` lives in the `webroot` checkout. Pass both
+arguments explicitly, as shown above.
 
 ### Deploying without LLM keys
 
@@ -182,7 +158,7 @@ worker/src/index.js                   # Worker: LangChain LLM proxy
 worker/wrangler.toml                  # Worker config
 worker/package.json                   # Worker deps (@langchain/anthropic, @langchain/openai)
 worker/.dev.vars.example              # local dev secrets template
-worker/sync-secrets.sh                # syncs secrets from docker/.env into GitHub via gh CLI
+automation/sync-secrets.sh            # syncs secrets from docker/.env into GitHub via gh CLI (shared, not worker-specific)
 frontend-example.js                   # example fetch() call from frontend
 ```
 
@@ -197,6 +173,10 @@ CloudRoot/
 ├── .github/workflows/  
 │   ├── deploy-worker.yml           ← commit as-is  
 │   └── deploy-chat-worker.yml      ← commit as-is  
+├── automation/  
+│   ├── sync-secrets.sh             ← shared, not worker-specific — see its header comment  
+│   ├── README.md  
+│   └── manual.md  
 ├── worker/  
 │   ├── src/index.js  
 │   ├── package.json  

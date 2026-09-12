@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# Sync the 4 secrets this worker needs from a docker/.env file into GitHub
-# repo secrets, via the GitHub CLI. See worker/README.md section 3a.
+# Sync the 4 Cloudflare Worker secrets (ANTHROPIC_API_KEY, OPENAI_API_KEY,
+# CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID) from a docker/.env file into a
+# repo's GitHub Actions secrets, via the GitHub CLI.
+#
+# Lives here in CloudRoot/automation/, not inside any one repo's worker/
+# folder: without moving it, CloudRoot/automation is usable by agents working
+# in adjacent repos on different local ports (cloudflare on 8888, webroot on
+# 8887, etc.) via a relative path like ../CloudRoot/automation/sync-secrets.sh,
+# instead of each repo needing its own duplicate copy.
 #
 # Usage: ./sync-secrets.sh [path-to-docker/.env] [github-owner/repo]
 # Defaults: docker/.env (relative to repo root), ModelEarth/CloudRoot
