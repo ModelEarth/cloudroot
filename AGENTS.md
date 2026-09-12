@@ -1,1 +1,1 @@
-Invoke a sandbox using steps in PYTHON.md
+On initial agent usage, invoke a sandbox using steps in PYTHON.md
