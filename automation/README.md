@@ -3,8 +3,14 @@
 ## `sync-secrets.sh`
 
 Syncs the 4 Cloudflare Worker secrets (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) from a `docker/.env` file
-into a repo's GitHub Actions secrets, via the GitHub CLI.
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) from a local env file into a
+repo's GitHub Actions secrets, via the GitHub CLI.
+
+The env file path is remembered for you: pass it once as the first
+argument, and the script writes it to `paths.yaml` (generated here,
+gitignored — it's a per-machine preference, not something to share) so the
+next run without an argument reuses it. Falls back to `../docker/.env` if
+`paths.yaml` doesn't exist yet.
 
 It lives here rather than inside any one repo's `worker/` folder because
 it's shared, not specific to one worker: without moving it, `CloudRoot/automation`
@@ -20,29 +26,30 @@ GitHub Secrets are provided by GitHub Actions runners during a workflow run — 
 
 Getting the 4 keys/credentials this needs and adding them to GitHub can be
 done by hand — see [manual.md](manual.md) ("Manual Alternative") — or with
-`sync-secrets.sh` below, if you keep them in a shared `docker/.env` file.
+`sync-secrets.sh` below, if you keep them in a local env file.
 
-## Sync secrets from `docker/.env` with `sync-secrets.sh`
+## Sync secrets from a local env file with `sync-secrets.sh`
 
 If you already keep these values in a shared `docker/.env` file (the local
 dev env file used across ModelEarth's repos), you don't have to copy them
-into the GitHub UI by hand. Run the script instead of asking an AI agent
-to type out the `gh` commands each time — a fixed script can't
-misread the instructions, forget a flag, or accidentally echo a secret,
-which a freshly-prompted agent could.
+into the GitHub UI by hand. Run the script instead of asking an AI agent to
+type out the `gh` commands each time — a fixed script can't misread the
+instructions, forget a flag, or accidentally echo a secret, which a
+freshly-prompted agent could.
 
-Its default paths don't resolve from `CloudRoot` regardless of where you run
-it from (see "Testing from a fork / other repos" below), so always pass both
-arguments explicitly:
+Its fallback default doesn't resolve from `CloudRoot` regardless of where
+you run it from (see "Testing from a fork / other repos" below), so pass
+both arguments explicitly the first time — after that, the path is
+remembered in `paths.yaml` and you can omit it:
 
 ```bash
-./sync-secrets.sh /path/to/docker/.env ModelEarth/CloudRoot
-./sync-secrets.sh /path/to/docker/.env owner/other-repo   # for another repo
+./sync-secrets.sh /path/to/cloud.env ModelEarth/CloudRoot
+./sync-secrets.sh /path/to/cloud.env owner/other-repo   # for another repo
 ```
 
 It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and
 authenticated (`gh auth status`). For each of the four secrets above, it
-reads the value from `docker/.env`, pushes it with `gh secret set` (never
+reads the value from the env file, pushes it with `gh secret set` (never
 printing the value to the terminal or logs), skips any key that's missing
 from the file instead of guessing, and finishes with `gh secret list` so
 you can confirm all four landed.
@@ -52,8 +59,8 @@ adapt it to a differently-shaped `.env`), point it at this script and ask
 it to run it or explain what it does — that's safer than asking it to
 improvise the `gh` commands from scratch.
 
-`ANTHROPIC_API_KEY` is the standard key name across the team's repos —
-`docker/.env` should use that name (not the retired `CLAUDE_API_KEY`) for
+`ANTHROPIC_API_KEY` is the standard key name across the team's repos — your
+env file should use that name (not the retired `CLAUDE_API_KEY`) for
 `sync-secrets.sh` to pick it up. See a given repo's `worker/.dev.vars.example`
 for its current set of keys, including `CLAUDE_CODE_OAUTH_TOKEN` as a
 subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
@@ -89,10 +96,11 @@ gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/<repo> --body $token
 Repeat for `CLOUDFLARE_ACCOUNT_ID`. Reading from the file rather than typing
 the value keeps it out of shell history.
 
-**The script's defaults do not resolve from CloudRoot.** Its built-in default
-path assumes a `docker` directory beside wherever it's run from, which
-CloudRoot does not have — `docker` lives in the `webroot` checkout. Pass both
-arguments explicitly, as shown above. Other repos (e.g. `cloudflare`) may
-have their own `docker/` submodule checked out, but the populated `.env`
-file itself commonly lives in just one place (`webroot/docker/.env`) — pass
-its path explicitly rather than relying on the default either way.
+**The script's fallback default does not resolve from CloudRoot.** Before
+`paths.yaml` exists, the built-in fallback (`../docker/.env`) assumes a
+`docker` directory beside wherever it's run from, which CloudRoot does not
+have — `docker` lives in the `webroot` checkout. Pass the path explicitly
+the first time, as shown above. Other repos (e.g. `cloudflare`) may have
+their own `docker/` submodule checked out, but the populated `.env` file
+itself commonly lives in just one place (`webroot/docker/.env`) — pass its
+path explicitly there too rather than relying on the fallback.

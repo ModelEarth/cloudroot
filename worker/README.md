@@ -21,47 +21,24 @@ Getting the 4 keys/credentials this needs (`ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and adding
 them to GitHub by hand is covered in
 [automation/manual.md](../automation/manual.md) ("Manual Alternative") — or
-use `sync-secrets.sh` below if you keep them in a shared `docker/.env` file.
+use `sync-secrets.sh` below if you keep them in a local env file.
 
-## Sync secrets from `docker/.env` with `sync-secrets.sh`
-
-If you already keep these values in a shared `docker/.env` file (the local
-dev env file used across ModelEarth's repos), you don't have to copy them
-into the GitHub UI by hand. Run the script instead of asking an AI agent
-to type out the `gh` commands each time — a fixed script can't
-misread the instructions, forget a flag, or accidentally echo a secret,
-which a freshly-prompted agent could.
+## Sync secrets from a local env file with `sync-secrets.sh`
 
 The script lives in `CloudRoot/automation/`, not in this `worker/` folder —
 it's shared across repos, not specific to this one worker (see the comment
-at the top of the script for why). Its default paths don't resolve from
-CloudRoot regardless of where you run it from (see below), so always pass
-both arguments explicitly:
+at the top of the script for why). Full usage, what it does, and its
+default env-file lookup order are documented in
+[automation/README.md](../automation/README.md); quick example:
 
 ```bash
-./automation/sync-secrets.sh /path/to/docker/.env ModelEarth/CloudRoot
-./automation/sync-secrets.sh /path/to/docker/.env owner/other-repo   # for another repo
+./automation/sync-secrets.sh /path/to/cloud.env ModelEarth/CloudRoot
+./automation/sync-secrets.sh /path/to/cloud.env owner/other-repo   # for another repo
 ```
 
-It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and
-authenticated (`gh auth status`). For each of the four secrets above, it
-reads the value from `docker/.env`, pushes it with `gh secret set` (never
-printing the value to the terminal or logs), skips any key that's missing
-from the file instead of guessing, and finishes with `gh secret list` so
-you can confirm all four landed.
+See `worker/.dev.vars.example` for this worker's current set of keys.
 
-If you'd rather have an AI coding assistant do this interactively (e.g. to
-adapt it to a differently-shaped `.env`), point it at this script and ask
-it to run it or explain what it does — that's safer than asking it to
-improvise the `gh` commands from scratch.
-
-`ANTHROPIC_API_KEY` is the standard key name across the team's repos —
-`docker/.env` should use that name (not the retired `CLAUDE_API_KEY`) for
-`sync-secrets.sh` to pick it up. See `worker/.dev.vars.example` for the
-current set of keys, including `CLAUDE_CODE_OAUTH_TOKEN` as a
-subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
-
-This only touches the four secrets this worker needs — `docker/.env` holds
+This only touches the four secrets this worker needs — a shared env file holds
 many more keys for other services (the Rust API, Arts Engine, Sanity,
 Better Auth, Supabase, etc.) that this prompt intentionally leaves alone.
 
@@ -158,7 +135,7 @@ worker/src/index.js                   # Worker: LangChain LLM proxy
 worker/wrangler.toml                  # Worker config
 worker/package.json                   # Worker deps (@langchain/anthropic, @langchain/openai)
 worker/.dev.vars.example              # local dev secrets template
-automation/sync-secrets.sh            # syncs secrets from docker/.env into GitHub via gh CLI (shared, not worker-specific)
+automation/sync-secrets.sh            # syncs secrets from a local env file into GitHub via gh CLI (shared, not worker-specific)
 frontend-example.js                   # example fetch() call from frontend
 ```
 
