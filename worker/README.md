@@ -27,7 +27,10 @@ GitHub Secrets are provided by GitHub Actions runners during a workflow run — 
 1. Cloudflare dashboard → **My Profile → API Tokens → Create Token**
    - Use the "Edit Cloudflare Workers" template, scoped to your account.
 2. Note your **Account ID** (right sidebar of the Cloudflare dashboard, or
-   `Workers & Pages` overview page).
+   `Workers & Pages` overview page) — or skip this if you'll use
+   `sync-secrets.sh` below: it falls back to reading the Account ID from
+   `wrangler whoami` when it's not in your `.env` file (after a one-time
+   `npx wrangler login`).
 
 ## 3. Add secrets to GitHub
 

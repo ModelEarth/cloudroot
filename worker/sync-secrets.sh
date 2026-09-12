@@ -26,12 +26,30 @@ if ! gh auth status >/dev/null 2>&1; then
   exit 1
 fi
 
+# Fallback for CLOUDFLARE_ACCOUNT_ID when it's not in $ENV_FILE: read it from
+# `wrangler whoami`, if Wrangler is installed and already logged in (run
+# `npx wrangler login` first — that part is an interactive browser flow this
+# script can't do for you). Account IDs are 32-char hex, so grab the first
+# match from the output rather than parsing wrangler's table formatting,
+# which differs across versions.
+fetch_account_id_from_wrangler() {
+  command -v npx >/dev/null 2>&1 || return 1
+  npx wrangler whoami 2>/dev/null | grep -oE '[0-9a-f]{32}' | head -n1
+}
+
 echo "Syncing secrets from $ENV_FILE into $REPO ..."
 echo
 
 for key in "${KEYS[@]}"; do
   # last matching line wins, strip surrounding quotes, ignore commented-out lines
   value=$(grep -E "^${key}=" "$ENV_FILE" | tail -n1 | cut -d '=' -f2- | sed -e 's/^"//' -e 's/"$//')
+
+  if [[ -z "$value" && "$key" == "CLOUDFLARE_ACCOUNT_ID" ]]; then
+    value=$(fetch_account_id_from_wrangler || true)
+    if [[ -n "$value" ]]; then
+      echo "  found $key via 'wrangler whoami' (not in $ENV_FILE)"
+    fi
+  fi
 
   if [[ -z "$value" ]]; then
     echo "  skip  $key (not set in $ENV_FILE)"
