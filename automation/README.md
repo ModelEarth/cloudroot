@@ -1,4 +1,6 @@
-# automation/
+# Cloud Automation
+
+[manual.md](manual.md)
 
 ## `sync-secrets.sh`
 
