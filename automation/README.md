@@ -37,10 +37,33 @@ type out the `gh` commands each time — a fixed script can't misread the
 instructions, forget a flag, or accidentally echo a secret, which a
 freshly-prompted agent could.
 
-Its fallback default doesn't resolve from `CloudRoot` regardless of where
-you run it from (see "Testing from a fork / other repos" below), so pass
-both arguments explicitly the first time — after that, the path is
-remembered in `paths.yaml` and you can omit it:
+Simplest form, once `paths.yaml` already has a remembered env file path
+(see above — its fallback default doesn't resolve from `CloudRoot`, so pass
+a real path explicitly the first time):
+
+```bash
+./sync-secrets.sh
+```
+
+With no repo given either, the target repo is read from this checkout's own
+git remote — whichever account you forked/cloned `CloudRoot` from, not any
+one hardcoded account — so this naturally targets *your* fork. If that
+can't be determined (no git remote configured), it prompts:
+`GitHub account of your CloudRoot fork:`.
+
+To target a different repo while still using the remembered env file, pass
+the literal word `paths.yaml` as the first argument — it's a placeholder
+telling the script "don't override the env file, just the repo":
+
+```bash
+./sync-secrets.sh paths.yaml [GitHub Acct]/[Repo]
+```
+
+`paths.yaml` there means the script falls through to whatever's saved in
+that file, the same as omitting the argument entirely — `./sync-secrets.sh
+""  owner/repo` also works, but `paths.yaml` is clearer to read. To set a
+*different* env file (which also becomes the new remembered default), pass
+its real path instead:
 
 ```bash
 ./sync-secrets.sh /path/to/cloud.env ModelEarth/CloudRoot

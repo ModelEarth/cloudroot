@@ -10,11 +10,18 @@
 # instead of each repo needing its own duplicate copy.
 #
 # Usage: ./sync-secrets.sh [path-to-env-file] [github-owner/repo]
-# Default env file path (when none is passed) comes from paths.yaml's
-# env_file: key, next to this script. paths.yaml is generated/updated by
-# this script itself, not hand-maintained: pass a path once as the first
-# argument and it's remembered as the new default for next time. It's
-# machine-local (gitignored), so each person's own choice stays their own.
+# Default env file path (when no path is passed, or "paths.yaml" is passed
+# literally as a placeholder meaning "use the remembered default") comes
+# from paths.yaml's env_file: key, next to this script. paths.yaml is
+# generated/updated by this script itself, not hand-maintained: pass a real
+# path once as the first argument and it's remembered as the new default
+# for next time. It's machine-local (gitignored), so each person's own
+# choice stays their own.
+#
+# Passing "paths.yaml" as the first argument (rather than a real path) is
+# how to override just the second argument (the target repo) while still
+# using the remembered env file - the alternative, ./sync-secrets.sh ""
+# owner/repo, works too but is easy to mistype or misread.
 
 set -euo pipefail
 
@@ -22,7 +29,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATHS_YAML="$SCRIPT_DIR/paths.yaml"
 FALLBACK_ENV_FILE="../docker/.env"
 
-if [[ -n "${1:-}" ]]; then
+if [[ -n "${1:-}" && "$1" != "paths.yaml" ]]; then
   ENV_FILE="$1"
 elif [[ -f "$PATHS_YAML" ]]; then
   yaml_value=$(grep -E '^env_file:' "$PATHS_YAML" | tail -n1 | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//')
@@ -31,7 +38,28 @@ else
   ENV_FILE="$FALLBACK_ENV_FILE"
 fi
 
-REPO="${2:-ModelEarth/CloudRoot}"
+# Target repo: an explicit second argument always wins. Otherwise, read the
+# owner/repo straight out of this checkout's own git remote (SCRIPT_DIR/..
+# is always the CloudRoot checkout, wherever this script was invoked from) -
+# that's whichever GitHub account this copy was cloned/forked from, not any
+# one hardcoded account. Only if that can't be determined (e.g. no git
+# remote configured) do we ask.
+detect_repo_from_git_config() {
+  local remote_url
+  remote_url=$(git -C "$SCRIPT_DIR/.." config --get remote.origin.url 2>/dev/null) || return 1
+  [[ -n "$remote_url" ]] || return 1
+  echo "$remote_url" | sed -E 's#^(https://github\.com/|git@github\.com:)##; s#\.git$##; s#/$##'
+}
+
+if [[ -n "${2:-}" ]]; then
+  REPO="$2"
+elif detected_repo="$(detect_repo_from_git_config)" && [[ -n "$detected_repo" ]]; then
+  REPO="$detected_repo"
+  echo "Using repo from git remote: $REPO (pass one as the 2nd argument to override)"
+else
+  read -rp "GitHub account of your CloudRoot fork: " fork_account
+  REPO="$fork_account/CloudRoot"
+fi
 KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID)
 
 if [[ ! -f "$ENV_FILE" ]]; then

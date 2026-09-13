@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Local secrets — never commit real keys
+# Local config
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
