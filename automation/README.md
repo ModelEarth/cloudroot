@@ -11,8 +11,19 @@ repo's GitHub Actions secrets, via the GitHub CLI.
 The env file path is remembered for you: pass it once as the first
 argument, and the script writes it to `paths.yaml` (generated here,
 gitignored — it's a per-machine preference, not something to share) so the
-next run without an argument reuses it. Falls back to `../docker/.env` if
-`paths.yaml` doesn't exist yet.
+next run without an argument reuses it. The first time `paths.yaml` doesn't
+exist yet and no path is given, it asks before assuming the fallback
+(`../../safe/cloudroot.env` — a folder outside any git repo, so nothing here
+depends on a particular sibling repo like `docker` being checked out)
+rather than silently guessing.
+
+If that fallback file doesn't exist yet either, it's created for you from
+[ModelEarth/docker's `.env.example`](https://raw.githubusercontent.com/ModelEarth/docker/refs/heads/main/.env.example)
+template. That template ships real-looking placeholder values for some keys
+(e.g. `ANTHROPIC_API_KEY=your-anthropic-key`), so the script stops right
+after creating it rather than syncing those placeholders as if they were
+real secrets — edit the file with your actual values, then run the command
+again.
 
 It lives here rather than inside any one repo's `worker/` folder because
 it's shared, not specific to one worker: without moving it, `CloudRoot/automation`
@@ -39,13 +50,17 @@ type out the `gh` commands each time — a fixed script can't misread the
 instructions, forget a flag, or accidentally echo a secret, which a
 freshly-prompted agent could.
 
-Simplest form, once `paths.yaml` already has a remembered env file path
-(see above — its fallback default doesn't resolve from `CloudRoot`, so pass
-a real path explicitly the first time):
+Simplest form:
 
 ```bash
 ./sync-secrets.sh
 ```
+
+The very first time, with no `paths.yaml` yet, it asks whether to use
+`../../safe/cloudroot.env` (creating it from a template if it doesn't exist
+yet — see above) or lets you type a different path; either way, once that
+file has real values in it and a sync succeeds, the path becomes the
+remembered default, so every run after that is just the bare command above.
 
 With no repo given either, the target repo is read from this checkout's own
 git remote — whichever account you forked/cloned `CloudRoot` from, not any
@@ -121,11 +136,19 @@ gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/<repo> --body $token
 Repeat for `CLOUDFLARE_ACCOUNT_ID`. Reading from the file rather than typing
 the value keeps it out of shell history.
 
-**The script's fallback default does not resolve from CloudRoot.** Before
-`paths.yaml` exists, the built-in fallback (`../docker/.env`) assumes a
-`docker` directory beside wherever it's run from, which CloudRoot does not
-have — `docker` lives in the `webroot` checkout. Pass the path explicitly
-the first time, as shown above. Other repos (e.g. `cloudflare`) may have
-their own `docker/` submodule checked out, but the populated `.env` file
-itself commonly lives in just one place (`webroot/docker/.env`) — pass its
-path explicitly there too rather than relying on the fallback.
+**The fallback default (`../../safe/cloudroot.env`) works the same from any
+repo**, since it's outside any git checkout rather than depending on a
+sibling `docker` folder existing. If you'd rather point at an existing
+shared file instead (e.g. `webroot/docker/.env`), pass its path explicitly
+the first time, as shown above.
+
+**`failed to fetch public key: HTTP 403: You must have repository read
+permissions or have the repository secrets fine-grained permission.`** The
+gh account that's currently active doesn't have access to manage secrets on
+the target repo — the script checks for this upfront and reports it more
+plainly, running `gh auth status` for you and printing its output so you
+can see all your logged-in accounts right there. If you see the raw error
+above instead (e.g. running `gh secret set` directly), the fix is the same:
+run `gh auth status` yourself, then `gh auth switch --user <account>` to
+one with read/write
+access to that repo, and retry.
