@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Sync the 4 Cloudflare Worker secrets (ANTHROPIC_API_KEY, OPENAI_API_KEY,
+# Copies 4 Cloudflare Worker config values (ANTHROPIC_API_KEY, OPENAI_API_KEY,
 # CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID) from a local env file into a
-# repo's GitHub Actions secrets, via the GitHub CLI.
+# repo's GitHub Actions config, via the GitHub CLI.
 #
 # Lives here in CloudRoot/automation/, not inside any one repo's worker/
 # folder: without moving it, CloudRoot/automation is usable by agents working
 # in adjacent repos on different local ports (cloudflare on 8888, webroot on
-# 8887, etc.) via a relative path like ../CloudRoot/automation/sync-secrets.sh,
+# 8887, etc.) via a relative path like ../CloudRoot/automation/sync-config.sh,
 # instead of each repo needing its own duplicate copy.
 #
-# Usage: ./sync-secrets.sh [path-to-env-file] [github-owner/repo]
+# Usage: ./sync-config.sh [path-to-env-file] [github-owner/repo]
 # Default env file path (when no path is passed, or "paths.yaml" is passed
 # literally as a placeholder meaning "use the remembered default") comes
 # from paths.yaml's env_file: key, next to this script. paths.yaml is
@@ -27,7 +27,7 @@
 #
 # Passing "paths.yaml" as the first argument (rather than a real path) is
 # how to override just the second argument (the target repo) while still
-# using the remembered env file - the alternative, ./sync-secrets.sh ""
+# using the remembered env file - the alternative, ./sync-config.sh ""
 # owner/repo, works too but is easy to mistype or misread.
 
 set -euo pipefail
@@ -106,10 +106,10 @@ fi
 # Remember this run's (now-confirmed-valid) path as the new default, so the
 # next run without an explicit argument reuses it.
 cat > "$PATHS_YAML" <<EOF
-# Default paths used by scripts in this folder (e.g. sync-secrets.sh).
+# Default paths used by scripts in this folder (e.g. sync-config.sh).
 # Generated/updated automatically - reflects the env file path last used.
 # Not committed to git (see .gitignore); pass a different path as
-# sync-secrets.sh's first argument to change it.
+# sync-config.sh's first argument to change it.
 
 env_file: $ENV_FILE
 EOF
@@ -180,7 +180,7 @@ is_placeholder_value() {
   [[ "$1" =~ ^[Yy]our[-_].*(key|token)$ ]]
 }
 
-echo "Syncing secrets from $ENV_FILE into $REPO ..."
+echo "Syncing config from $ENV_FILE into $REPO ..."
 echo
 
 for key in "${KEYS[@]}"; do
@@ -235,5 +235,5 @@ for key in "${KEYS[@]}"; do
 done
 
 echo
-echo "Current secrets on $REPO:"
+echo "Current config on $REPO:"
 gh secret list --repo "$REPO"

@@ -1,13 +1,13 @@
 # Manual Alternative
 
-Steps for getting the 4 Cloudflare Worker secrets (`ANTHROPIC_API_KEY`,
+Steps for getting the 4 Cloudflare Worker config values (`ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and adding
 them to GitHub by hand. See [README.md](README.md) in this folder instead if
-you'd rather run `sync-secrets.sh` to do this from a `docker/.env` file.
+you'd rather run `sync-config.sh` to do this from a `docker/.env` file.
 
-## GitHub Secrets
+## GitHub Actions config
 
-GitHub Secrets are provided by GitHub Actions runners during a workflow run — they are never sent to a browser. A repo's Cloudflare Worker deploy workflow uses them to configure Cloudflare (a service that *can* safely hold runtime secrets and serve requests), not to hand keys to frontend code.
+These values are provided to GitHub Actions runners during a workflow run — they are never sent to a browser. A repo's Cloudflare Worker deploy workflow uses them to configure Cloudflare (a service that *can* safely hold runtime config and serve requests), not to hand keys to frontend code. GitHub's own UI calls this "Secrets" — that's the setting name you'll see below.
 
 ## 1. Get your API keys
 
@@ -20,27 +20,27 @@ GitHub Secrets are provided by GitHub Actions runners during a workflow run — 
    - Use the "Edit Cloudflare Workers" template, scoped to your account.
 2. Note your **Account ID** (right sidebar of the Cloudflare dashboard, or
    `Workers & Pages` overview page) — or skip this if you'll use
-   `sync-secrets.sh` instead: it falls back to reading the Account ID from
+   `sync-config.sh` instead: it falls back to reading the Account ID from
    `wrangler whoami` when it's not in your `.env` file (after a one-time
    `npx wrangler login`).
 
-## 3. Add secrets to GitHub
+## 3. Add these to GitHub
 
 In the target repo: **Settings → Secrets and variables → Actions → New repository secret**
 
 Add each of these (name must match exactly):
 
-| Secret name             | Value                                  |
+| Name                     | Value                                  |
 |--------------------------|-----------------------------------------|
 | `ANTHROPIC_API_KEY`      | Your Anthropic key                     |
 | `OPENAI_API_KEY`         | Your OpenAI key                        |
 | `CLOUDFLARE_API_TOKEN`   | The token you created in step 2        |
-| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account ID             |
+| `CLOUDFLARE_ACCOUNT_ID`  | Your Cloudflare account ID              |
 
-Since these are often private repos with multiple collaborators: repo
-secrets are only visible to workflows, never in logs or to collaborators via
+Since these are often private repos with multiple collaborators: this repo
+config is only visible to workflows, never in logs or to collaborators via
 the UI — but anyone with **write access** can modify a workflow file to
-print or exfiltrate a secret in a run they trigger. If you want tighter
+print or exfiltrate a value in a run they trigger. If you want tighter
 control, use **Environments** (Settings → Environments → New environment →
-add the secrets there instead of at repo level) and require reviewers to
+add the config there instead of at repo level) and require reviewers to
 approve deployments that use them.

@@ -2,11 +2,11 @@
 
 [manual.md](manual.md)
 
-## `sync-secrets.sh`
+## `sync-config.sh`
 
-Syncs the 4 Cloudflare Worker secrets (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+Copies 4 Cloudflare Worker config values (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) from a local env file into a
-repo's GitHub Actions secrets, via the GitHub CLI.
+repo's GitHub Actions config, via the GitHub CLI.
 
 The env file path is remembered for you: pass it once as the first
 argument, and the script writes it to `paths.yaml` (generated here,
@@ -22,38 +22,45 @@ If that fallback file doesn't exist yet either, it's created for you from
 template. That template ships real-looking placeholder values for some keys
 (e.g. `ANTHROPIC_API_KEY=your-anthropic-key`), so the script stops right
 after creating it rather than syncing those placeholders as if they were
-real secrets — edit the file with your actual values, then run the command
+real values — edit the file with your actual values, then run the command
 again.
 
 It lives here rather than inside any one repo's `worker/` folder because
 it's shared, not specific to one worker: without moving it, `CloudRoot/automation`
 is usable by agents working in adjacent repos on different local ports
 (cloudflare on 8888, webroot on 8887, etc.) via a relative path like
-`../CloudRoot/automation/sync-secrets.sh`, instead of each repo needing its
+`../CloudRoot/automation/sync-config.sh`, instead of each repo needing its
 own duplicate copy. See the comment at the top of the script itself for the
 same note.
 
-## GitHub Secrets
+## GitHub Actions config
 
-GitHub Secrets are provided by GitHub Actions runners during a workflow run — they are never sent to a browser. A repo's Cloudflare Worker deploy workflow uses them to configure Cloudflare (a service that *can* safely hold runtime secrets and serve requests), not to hand keys to frontend code.
+GitHub stores these values as encrypted config for a repo's Actions
+workflows — provided to a workflow run, never sent to a browser. A repo's
+Cloudflare Worker deploy workflow reads them to configure Cloudflare (a
+service that *can* safely hold runtime config and serve requests), not to
+hand keys to frontend code. GitHub's own UI and CLI call this feature
+"Secrets" (Settings → Secrets and variables → Actions, `gh secret set`),
+so you'll see that word in GitHub's own screens and command output even
+though this doc mostly says "config."
 
-Getting the 4 keys/credentials this needs and adding them to GitHub can be
-done by hand — see [manual.md](manual.md) ("Manual Alternative") — or with
-`sync-secrets.sh` below, if you keep them in a local env file.
+Getting the 4 values this needs and adding them to GitHub can be done by
+hand — see [manual.md](manual.md) ("Manual Alternative") — or with
+`sync-config.sh` below, if you keep them in a local env file.
 
-## Sync secrets from a local env file with `sync-secrets.sh`
+## Sync config from a local env file with `sync-config.sh`
 
 If you already keep these values in a shared `docker/.env` file (the local
 dev env file used across ModelEarth's repos), you don't have to copy them
 into the GitHub UI by hand. Run the script instead of asking an AI agent to
 type out the `gh` commands each time — a fixed script can't misread the
-instructions, forget a flag, or accidentally echo a secret, which a
+instructions, forget a flag, or accidentally echo a value, which a
 freshly-prompted agent could.
 
 Simplest form:
 
 ```bash
-./sync-secrets.sh
+./sync-config.sh
 ```
 
 The very first time, with no `paths.yaml` yet, it asks whether to use
@@ -73,26 +80,26 @@ the literal word `paths.yaml` as the first argument — it's a placeholder
 telling the script "don't override the env file, just the repo":
 
 ```bash
-./sync-secrets.sh paths.yaml [GitHub Acct]/[Repo]
+./sync-config.sh paths.yaml [GitHub Acct]/[Repo]
 ```
 
 `paths.yaml` there means the script falls through to whatever's saved in
-that file, the same as omitting the argument entirely — `./sync-secrets.sh
+that file, the same as omitting the argument entirely — `./sync-config.sh
 ""  owner/repo` also works, but `paths.yaml` is clearer to read. To set a
 *different* env file (which also becomes the new remembered default), pass
 its real path instead:
 
 ```bash
-./sync-secrets.sh /path/to/cloud.env ModelEarth/CloudRoot
-./sync-secrets.sh /path/to/cloud.env owner/other-repo   # for another repo
+./sync-config.sh /path/to/cloud.env ModelEarth/CloudRoot
+./sync-config.sh /path/to/cloud.env owner/other-repo   # for another repo
 ```
 
 It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and
-authenticated (`gh auth status`). For each of the four secrets above, it
-reads the value from the env file, pushes it with `gh secret set` (never
-printing the value to the terminal or logs), skips any key that's missing
-from the file instead of guessing, and finishes with `gh secret list` so
-you can confirm all four landed.
+authenticated (`gh auth status`). For each of the four values above, it
+reads it from the env file, pushes it with `gh secret set` (never printing
+the value to the terminal or logs), skips any key that's missing from the
+file instead of guessing, and finishes with `gh secret list` so you can
+confirm all four landed.
 
 If you'd rather have an AI coding assistant do this interactively (e.g. to
 adapt it to a differently-shaped `.env`), point it at this script and ask
@@ -101,11 +108,11 @@ improvise the `gh` commands from scratch.
 
 `ANTHROPIC_API_KEY` is the standard key name across the team's repos — your
 env file should use that name (not the retired `CLAUDE_API_KEY`) for
-`sync-secrets.sh` to pick it up. See a given repo's `worker/.dev.vars.example`
+`sync-config.sh` to pick it up. See a given repo's `worker/.dev.vars.example`
 for its current set of keys, including `CLAUDE_CODE_OAUTH_TOKEN` as a
 subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
 
-This only touches the four secrets a Cloudflare Worker deploy needs —
+This only touches the four values a Cloudflare Worker deploy needs —
 `docker/.env` holds many more keys for other services (the Rust API, Arts
 Engine, Sanity, Better Auth, Supabase, etc.) that this script intentionally
 leaves alone.
@@ -125,8 +132,8 @@ git pull upstream main
 git push origin main
 ```
 
-**`sync-secrets.sh` needs bash.** It will not run in PowerShell without WSL
-installed. On Windows, set the two secrets directly instead:
+**`sync-config.sh` needs bash.** It will not run in PowerShell without WSL
+installed. On Windows, set the two Cloudflare values directly instead:
 
 ```powershell
 $token = (Select-String -Path path\to\docker\.env -Pattern '^CLOUDFLARE_API_TOKEN=' | Select-Object -First 1).Line -replace '^CLOUDFLARE_API_TOKEN=',''
@@ -144,11 +151,10 @@ the first time, as shown above.
 
 **`failed to fetch public key: HTTP 403: You must have repository read
 permissions or have the repository secrets fine-grained permission.`** The
-gh account that's currently active doesn't have access to manage secrets on
-the target repo — the script checks for this upfront and reports it more
-plainly, running `gh auth status` for you and printing its output so you
-can see all your logged-in accounts right there. If you see the raw error
-above instead (e.g. running `gh secret set` directly), the fix is the same:
-run `gh auth status` yourself, then `gh auth switch --user <account>` to
-one with read/write
-access to that repo, and retry.
+gh account that's currently active doesn't have config access on the
+target repo — the script checks for this upfront, tries your other
+logged-in accounts, and switches to the first one that works, printing one
+line about the switch. If none work, or if you see the raw error above
+instead (e.g. running `gh secret set` directly), the fix is the same: run
+`gh auth status` to see your logged-in accounts, then `gh auth switch
+--user <account>` to one with read/write access to that repo, and retry.

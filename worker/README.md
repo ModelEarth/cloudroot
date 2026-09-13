@@ -1,29 +1,29 @@
 # LLM Proxy Worker
 
-## Cloudflare Worker + GitHub Secrets
+## Cloudflare Worker + GitHub Actions config
 
 A Cloudflare Worker that holds your LLM API keys server-side and exposes a
 single `/api/chat` endpoint. Your frontend JS calls the Worker — it never
 touches an Anthropic or OpenAI key directly. GitHub Actions deploys the
-Worker and pushes your keys from **GitHub Secrets** into **Cloudflare
-Secrets** on every push to `main`.
+Worker and pushes your keys from **GitHub Actions config** into **Cloudflare**
+on every push to `main`.
 
 ```
 frontend JS  --->  Cloudflare Worker (/api/chat)  --->  Anthropic / OpenAI
-                    (holds API keys as secrets)
+                    (holds API keys server-side)
 ```
 
-## GitHub Secrets
+## GitHub Actions config
 
-GitHub Secrets are provided by GitHub Actions runners during a workflow run — they are never sent to a browser. This repo uses them to configure Cloudflare (a service that *can* safely hold runtime secrets and serve requests), not to hand keys to frontend code.
+These values are provided to GitHub Actions runners during a workflow run — they are never sent to a browser. This repo uses them to configure Cloudflare (a service that *can* safely hold runtime config and serve requests), not to hand keys to frontend code. GitHub's own UI/CLI call this "Secrets" (`gh secret set`), so you'll see that word on GitHub's own screens.
 
 Getting the 4 keys/credentials this needs (`ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and adding
 them to GitHub by hand is covered in
 [automation/manual.md](../automation/manual.md) ("Manual Alternative") — or
-use `sync-secrets.sh` below if you keep them in a local env file.
+use `sync-config.sh` below if you keep them in a local env file.
 
-## Sync secrets from a local env file with `sync-secrets.sh`
+## Sync config from a local env file with `sync-config.sh`
 
 The script lives in `CloudRoot/automation/`, not in this `worker/` folder —
 it's shared across repos, not specific to this one worker (see the comment
@@ -32,13 +32,13 @@ default env-file lookup order are documented in
 [automation/README.md](../automation/README.md); quick example:
 
 ```bash
-./automation/sync-secrets.sh /path/to/cloud.env ModelEarth/CloudRoot
-./automation/sync-secrets.sh /path/to/cloud.env owner/other-repo   # for another repo
+./automation/sync-config.sh /path/to/cloud.env ModelEarth/CloudRoot
+./automation/sync-config.sh /path/to/cloud.env owner/other-repo   # for another repo
 ```
 
 See `worker/.dev.vars.example` for this worker's current set of keys.
 
-This only touches the four secrets this worker needs — a shared env file holds
+This only touches the four values this worker needs — a shared env file holds
 many more keys for other services (the Rust API, Arts Engine, Sanity,
 Better Auth, Supabase, etc.) that this prompt intentionally leaves alone.
 
@@ -57,8 +57,8 @@ git pull upstream main
 git push origin main
 ```
 
-**`sync-secrets.sh` needs bash.** It will not run in PowerShell without WSL
-installed. On Windows, set the two secrets directly instead:
+**`sync-config.sh` needs bash.** It will not run in PowerShell without WSL
+installed. On Windows, set the two Cloudflare values directly instead:
 
 ```powershell
 $token = (Select-String -Path path\to\docker\.env -Pattern '^CLOUDFLARE_API_TOKEN=' | Select-Object -First 1).Line -replace '^CLOUDFLARE_API_TOKEN=',''
@@ -79,7 +79,7 @@ The Cloudflare credentials alone are enough to deploy. `ANTHROPIC_API_KEY`
 and `OPENAI_API_KEY` can be left unset while verifying the pipeline; the
 workflow pushes empty strings, and the Worker returns
 `{"error":"ANTHROPIC_API_KEY not configured"}` on request rather than
-failing. Useful for confirming the GitHub Secrets to Cloudflare chain works
+failing. Useful for confirming the GitHub-to-Cloudflare config chain works
 before spending on API credit.
 
 Verify with:
@@ -101,7 +101,7 @@ Push to `main` with changes under `worker/`, or trigger manually from the
 
 1. Installs dependencies in `worker/`
 2. Pushes `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` into Cloudflare as Worker
-   secrets via `wrangler secret put`
+   config via `wrangler secret put`
 3. Runs `wrangler deploy`
 
 After the first deploy, note the Worker URL Cloudflare prints
@@ -118,7 +118,7 @@ npm run dev
 ```
 
 `.dev.vars` is git-ignored — it's only for local `wrangler dev` testing and
-is never used in production (production uses the secrets pushed by the
+is never used in production (production uses the config pushed by the
 Actions workflow).
 
 ## 6. Call it from the frontend
@@ -130,12 +130,12 @@ See `frontend-example.js`. No keys anywhere in the frontend bundle — just a
 ## Files
 
 ```
-.github/workflows/deploy-worker.yml   # CI: deploy + sync secrets
+.github/workflows/deploy-worker.yml   # CI: deploy + sync config
 worker/src/index.js                   # Worker: LangChain LLM proxy
 worker/wrangler.toml                  # Worker config
 worker/package.json                   # Worker deps (@langchain/anthropic, @langchain/openai)
-worker/.dev.vars.example              # local dev secrets template
-automation/sync-secrets.sh            # syncs secrets from a local env file into GitHub via gh CLI (shared, not worker-specific)
+worker/.dev.vars.example              # local dev config template
+automation/sync-config.sh             # syncs config from a local env file into GitHub via gh CLI (shared, not worker-specific)
 frontend-example.js                   # example fetch() call from frontend
 ```
 
@@ -143,7 +143,7 @@ frontend-example.js                   # example fetch() call from frontend
 
 Edit `getModel()` in `worker/src/index.js` — add a new `case` for the
 provider, wire up its LangChain chat class, and add the matching key as
-both a GitHub secret and a `wrangler secret put` line in the workflow.
+both GitHub config and a `wrangler secret put` line in the workflow.
 
 ```
 CloudRoot/  
@@ -151,7 +151,7 @@ CloudRoot/
 │   ├── deploy-worker.yml           ← commit as-is  
 │   └── deploy-chat-worker.yml      ← commit as-is  
 ├── automation/  
-│   ├── sync-secrets.sh             ← shared, not worker-specific — see its header comment  
+│   ├── sync-config.sh              ← shared, not worker-specific — see its header comment  
 │   ├── README.md  
 │   └── manual.md  
 ├── worker/  
