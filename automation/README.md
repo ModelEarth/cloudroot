@@ -28,7 +28,7 @@ again.
 It lives here rather than inside any one repo's `worker/` folder because
 it's shared, not specific to one worker: without moving it, `CloudRoot/automation`
 is usable by agents working in adjacent repos on different local ports
-(cloudflare on 8888, webroot on 8887, etc.) via a relative path like
+(cloudroot on 3700, webroot on 8887) via a relative path like
 `../CloudRoot/automation/sync-config.sh`, instead of each repo needing its
 own duplicate copy. See the comment at the top of the script itself for the
 same note.
