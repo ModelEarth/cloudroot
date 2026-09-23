@@ -3,7 +3,8 @@
 Steps for getting the 4 Cloudflare Worker config values (`ANTHROPIC_API_KEY`,
 `OPENAI_API_KEY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and adding
 them to GitHub by hand. See [README.md](README.md) in this folder instead if
-you'd rather run `sync-config.sh` to do this from a `docker/.env` file.
+you'd rather run `sync-config.sh` to do this from your local env file (the
+one `paths.yaml` in this folder points at).
 
 ## GitHub Actions config
 

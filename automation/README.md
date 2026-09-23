@@ -12,12 +12,10 @@ The env file path is remembered for you: pass it once as the first
 argument, and the script writes it to `paths.yaml` (generated here,
 gitignored — it's a per-machine preference, not something to share) so the
 next run without an argument reuses it. The first time `paths.yaml` doesn't
-exist yet and no path is given, it asks before assuming the fallback
-(`../../safe/cloudroot.env` — a folder outside any git repo, so nothing here
-depends on a particular sibling repo like `docker` being checked out)
-rather than silently guessing.
+exist yet and no path is given, it asks for a path outright — nothing is
+assumed or guessed.
 
-If that fallback file doesn't exist yet either, it's created for you from
+If the file you point at doesn't exist yet, it's created for you from
 [ModelEarth/docker's `.env.example`](https://raw.githubusercontent.com/ModelEarth/docker/refs/heads/main/.env.example)
 template. That template ships real-looking placeholder values for some keys
 (e.g. `ANTHROPIC_API_KEY=your-anthropic-key`), so the script stops right
@@ -50,12 +48,11 @@ hand — see [manual.md](manual.md) ("Manual Alternative") — or with
 
 ## Sync config from a local env file with `sync-config.sh`
 
-If you already keep these values in a shared `docker/.env` file (the local
-dev env file used across ModelEarth's repos), you don't have to copy them
-into the GitHub UI by hand. Run the script instead of asking an AI agent to
-type out the `gh` commands each time — a fixed script can't misread the
-instructions, forget a flag, or accidentally echo a value, which a
-freshly-prompted agent could.
+If you already keep these values in a local env file, you don't have to
+copy them into the GitHub UI by hand. Run the script instead of asking an
+AI agent to type out the `gh` commands each time — a fixed script can't
+misread the instructions, forget a flag, or accidentally echo a value,
+which a freshly-prompted agent could.
 
 Simplest form:
 
@@ -63,11 +60,11 @@ Simplest form:
 ./sync-config.sh
 ```
 
-The very first time, with no `paths.yaml` yet, it asks whether to use
-`../../safe/cloudroot.env` (creating it from a template if it doesn't exist
-yet — see above) or lets you type a different path; either way, once that
-file has real values in it and a sync succeeds, the path becomes the
-remembered default, so every run after that is just the bare command above.
+The very first time, with no `paths.yaml` yet, it asks for the path to your
+env file (creating it from a template if it doesn't exist yet — see above);
+once that file has real values in it and a sync succeeds, the path becomes
+the remembered default, so every run after that is just the bare command
+above.
 
 With no repo given either, the target repo is read from this checkout's own
 git remote — whichever account you forked/cloned `CloudRoot` from, not any
@@ -112,10 +109,10 @@ env file should use that name (not the retired `CLAUDE_API_KEY`) for
 for its current set of keys, including `CLAUDE_CODE_OAUTH_TOKEN` as a
 subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
 
-This only touches the four values a Cloudflare Worker deploy needs —
-`docker/.env` holds many more keys for other services (the Rust API, Arts
-Engine, Sanity, Better Auth, Supabase, etc.) that this script intentionally
-leaves alone.
+This only touches the four values a Cloudflare Worker deploy needs — your
+local env file likely holds many more keys for other services (the Rust
+API, Arts Engine, Sanity, Better Auth, Supabase, etc.) that this script
+intentionally leaves alone.
 
 ## Testing from a fork / other repos
 
@@ -136,18 +133,17 @@ git push origin main
 installed. On Windows, set the two Cloudflare values directly instead:
 
 ```powershell
-$token = (Select-String -Path path\to\docker\.env -Pattern '^CLOUDFLARE_API_TOKEN=' | Select-Object -First 1).Line -replace '^CLOUDFLARE_API_TOKEN=',''
+$token = (Select-String -Path path\to\your.env -Pattern '^CLOUDFLARE_API_TOKEN=' | Select-Object -First 1).Line -replace '^CLOUDFLARE_API_TOKEN=',''
 gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/<repo> --body $token
 ```
 
 Repeat for `CLOUDFLARE_ACCOUNT_ID`. Reading from the file rather than typing
 the value keeps it out of shell history.
 
-**The fallback default (`../../safe/cloudroot.env`) works the same from any
-repo**, since it's outside any git checkout rather than depending on a
-sibling `docker` folder existing. If you'd rather point at an existing
-shared file instead (e.g. `webroot/docker/.env`), pass its path explicitly
-the first time, as shown above.
+**No path is assumed** — you're asked for one the first time `paths.yaml`
+doesn't have `env_file:` set yet, and it's remembered from then on. Point it
+at whatever env file you actually use; pass a different path explicitly at
+any time to change it.
 
 **`failed to fetch public key: HTTP 403: You must have repository read
 permissions or have the repository secrets fine-grained permission.`** The

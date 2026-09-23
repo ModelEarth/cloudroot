@@ -14,13 +14,12 @@
 # literally as a placeholder meaning "use the remembered default") comes
 # from paths.yaml's env_file: key, next to this script. paths.yaml is
 # generated/updated by this script itself, not hand-maintained: the first
-# time it doesn't exist yet, this prompts before assuming the fallback
-# (../../safe/cloudroot.env, a folder outside any git repo); after that (or
-# if you pass a real path as the first argument), the choice is remembered
-# as the new default for next time. It's machine-local (gitignored), so
-# each person's own choice stays their own.
+# time it doesn't exist yet, this asks for a path outright — no path is
+# assumed. After that (or if you pass a real path as the first argument),
+# the choice is remembered as the new default for next time. It's
+# machine-local (gitignored), so each person's own choice stays their own.
 #
-# If the fallback path specifically doesn't exist yet, it's created from
+# If the file you point at doesn't exist yet, it's created from
 # ModelEarth/docker's .env.example template (fetched via curl/wget) rather
 # than erroring - see the placeholder-values warning further down for why
 # the script then stops instead of syncing straight from that fresh file.
@@ -34,24 +33,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATHS_YAML="$SCRIPT_DIR/paths.yaml"
-FALLBACK_ENV_FILE="../../safe/cloudroot.env"
 TEMPLATE_URL="https://raw.githubusercontent.com/ModelEarth/docker/refs/heads/main/.env.example"
 
 if [[ -n "${1:-}" && "$1" != "paths.yaml" ]]; then
   ENV_FILE="$1"
 elif [[ -f "$PATHS_YAML" ]]; then
   yaml_value=$(grep -E '^env_file:' "$PATHS_YAML" | tail -n1 | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//')
-  ENV_FILE="${yaml_value:-$FALLBACK_ENV_FILE}"
-else
-  # First run: no paths.yaml yet, and no path given. Ask rather than silently
-  # assuming the fallback - paths.yaml gets created below once ENV_FILE is
-  # confirmed to actually exist.
-  read -rp "No paths.yaml found yet - use $FALLBACK_ENV_FILE as your env file? [Y/n] " use_fallback
-  if [[ -z "$use_fallback" || "$use_fallback" =~ ^[Yy] ]]; then
-    ENV_FILE="$FALLBACK_ENV_FILE"
+  if [[ -z "$yaml_value" ]]; then
+    read -rp "No env_file: set in $PATHS_YAML yet. Path to your env file: " ENV_FILE
   else
-    read -rp "Path to your env file: " ENV_FILE
+    ENV_FILE="$yaml_value"
   fi
+else
+  # First run: no paths.yaml yet, and no path given.
+  read -rp "No paths.yaml found yet. Path to your env file: " ENV_FILE
 fi
 
 # Target repo: an explicit second argument always wins. Otherwise, read the
@@ -79,28 +74,23 @@ fi
 KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID)
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  if [[ "$ENV_FILE" == "$FALLBACK_ENV_FILE" ]]; then
-    echo "$ENV_FILE doesn't exist yet - creating it from ModelEarth/docker's .env.example template."
-    mkdir -p "$(dirname "$ENV_FILE")"
-    if command -v curl >/dev/null 2>&1; then
-      curl -fsSL "$TEMPLATE_URL" -o "$ENV_FILE"
-    elif command -v wget >/dev/null 2>&1; then
-      wget -qO "$ENV_FILE" "$TEMPLATE_URL"
-    else
-      echo "Error: need curl or wget installed to fetch the template." >&2
-      exit 1
-    fi
-    # The template ships real-looking placeholder values for some keys (e.g.
-    # ANTHROPIC_API_KEY=your-anthropic-key), not blank ones - syncing as-is
-    # would push those placeholders as if they were real secrets. Stop here
-    # rather than continue past a freshly-created, unedited file.
-    echo "Created $ENV_FILE with placeholder values from the template."
-    echo "Edit it with your real ANTHROPIC_API_KEY / OPENAI_API_KEY / CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID, then re-run this script."
-    exit 0
+  echo "$ENV_FILE doesn't exist yet - creating it from ModelEarth/docker's .env.example template."
+  mkdir -p "$(dirname "$ENV_FILE")"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$TEMPLATE_URL" -o "$ENV_FILE"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$ENV_FILE" "$TEMPLATE_URL"
   else
-    echo "Error: $ENV_FILE not found. Pass its path as the first argument." >&2
+    echo "Error: need curl or wget installed to fetch the template." >&2
     exit 1
   fi
+  # The template ships real-looking placeholder values for some keys (e.g.
+  # ANTHROPIC_API_KEY=your-anthropic-key), not blank ones - syncing as-is
+  # would push those placeholders as if they were real secrets. Stop here
+  # rather than continue past a freshly-created, unedited file.
+  echo "Created $ENV_FILE with placeholder values from the template."
+  echo "Edit it with your real ANTHROPIC_API_KEY / OPENAI_API_KEY / CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID, then re-run this script."
+  exit 0
 fi
 
 # Remember this run's (now-confirmed-valid) path as the new default, so the
