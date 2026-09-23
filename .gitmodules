@@ -1,32 +1,32 @@
 [submodule "auth"]
 	path = auth
-	url = https://github.com/modelearth/auth
+	url = https://github.com/ModelEarth/auth
 	branch = main
 [submodule "chat"]
 	path = chat
-	url = https://github.com/modelearth/chat
+	url = https://github.com/ModelEarth/chat
 	branch = main
 [submodule "feed"]
 	path = feed
-	url = https://github.com/modelearth/feed
+	url = https://github.com/ModelEarth/feed
 	branch = main
 [submodule "keys"]
 	path = keys
-	url = https://github.com/modelearth/keys
+	url = https://github.com/ModelEarth/keys
 	branch = main
 [submodule "know"]
 	path = know
-	url = https://github.com/modelearth/know
+	url = https://github.com/ModelEarth/know
 	branch = main
 [submodule "localsite"]
 	path = localsite
-	url = https://github.com/modelearth/localsite
+	url = https://github.com/ModelEarth/localsite
 	branch = main
 [submodule "requests"]
 	path = requests
-	url = https://github.com/modelearth/requests
+	url = https://github.com/ModelEarth/requests
 	branch = main
 [submodule "trade"]
 	path = trade
-	url = https://github.com/modelearth/trade
+	url = https://github.com/ModelEarth/trade
 	branch = main
