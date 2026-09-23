@@ -15,9 +15,11 @@ next run without an argument reuses it. The first time `paths.yaml` doesn't
 exist yet and no path is given, it asks for a path outright — nothing is
 assumed or guessed.
 
-If the file you point at doesn't exist yet, it's created for you from
-[ModelEarth/docker's `.env.example`](https://raw.githubusercontent.com/ModelEarth/docker/refs/heads/main/.env.example)
-template. That template ships real-looking placeholder values for some keys
+If the file you point at doesn't exist yet, the script asks before creating
+it from [`automation/.env.example`](.env.example) (the canonical sample env
+file committed in this folder) — a typo'd path would otherwise look
+identical to a legitimate first-run path, so nothing is written until you
+confirm. That template ships real-looking placeholder values for some keys
 (e.g. `ANTHROPIC_API_KEY=your-anthropic-key`), so the script stops right
 after creating it rather than syncing those placeholders as if they were
 real values — edit the file with your actual values, then run the command

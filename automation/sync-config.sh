@@ -19,10 +19,11 @@
 # the choice is remembered as the new default for next time. It's
 # machine-local (gitignored), so each person's own choice stays their own.
 #
-# If the file you point at doesn't exist yet, it's created from
-# ModelEarth/docker's .env.example template (fetched via curl/wget) rather
-# than erroring - see the placeholder-values warning further down for why
-# the script then stops instead of syncing straight from that fresh file.
+# If the file you point at doesn't exist yet, this asks before creating it
+# from automation/.env.example (the canonical sample env file committed in
+# this folder) rather than silently bootstrapping whatever path was typed -
+# see the placeholder-values warning further down for why the script then
+# stops instead of syncing straight from that fresh file.
 #
 # Passing "paths.yaml" as the first argument (rather than a real path) is
 # how to override just the second argument (the target repo) while still
@@ -33,12 +34,27 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATHS_YAML="$SCRIPT_DIR/paths.yaml"
-TEMPLATE_URL="https://raw.githubusercontent.com/ModelEarth/docker/refs/heads/main/.env.example"
+ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
+
+# Reads paths.yaml's env_file: key, stripping a trailing whitespace-preceded
+# inline comment (e.g. "../foo.env  # laptop") before trimming/unquoting -
+# same parsing as chat/lib/parse-env-file-setting.mjs, so a hand-edited
+# paths.yaml line can't silently resolve to a bogus path. The `|| true` on
+# the grep matters: with no env_file: line at all (e.g. a hand-edited or
+# corrupted paths.yaml), grep exits 1, and under `pipefail` that would
+# otherwise abort the whole script right here instead of falling into the
+# empty-value prompt below.
+read_env_file_setting() {
+  { grep -E '^env_file:' "$PATHS_YAML" || true; } \
+    | tail -n1 \
+    | cut -d ':' -f2- \
+    | sed -e 's/[[:space:]]#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//'
+}
 
 if [[ -n "${1:-}" && "$1" != "paths.yaml" ]]; then
   ENV_FILE="$1"
 elif [[ -f "$PATHS_YAML" ]]; then
-  yaml_value=$(grep -E '^env_file:' "$PATHS_YAML" | tail -n1 | cut -d ':' -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//')
+  yaml_value=$(read_env_file_setting)
   if [[ -z "$yaml_value" ]]; then
     read -rp "No env_file: set in $PATHS_YAML yet. Path to your env file: " ENV_FILE
   else
@@ -47,6 +63,11 @@ elif [[ -f "$PATHS_YAML" ]]; then
 else
   # First run: no paths.yaml yet, and no path given.
   read -rp "No paths.yaml found yet. Path to your env file: " ENV_FILE
+fi
+
+if [[ -z "$ENV_FILE" ]]; then
+  echo "Error: no env file path given." >&2
+  exit 1
 fi
 
 # Target repo: an explicit second argument always wins. Otherwise, read the
@@ -73,28 +94,30 @@ else
 fi
 KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID)
 
+CREATED_FROM_TEMPLATE=""
 if [[ ! -f "$ENV_FILE" ]]; then
-  echo "$ENV_FILE doesn't exist yet - creating it from ModelEarth/docker's .env.example template."
-  mkdir -p "$(dirname "$ENV_FILE")"
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$TEMPLATE_URL" -o "$ENV_FILE"
-  elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$ENV_FILE" "$TEMPLATE_URL"
-  else
-    echo "Error: need curl or wget installed to fetch the template." >&2
+  # No path is assumed anymore (see header comment), so a typo'd path looks
+  # identical to a legitimate first-run path at this point - ask before
+  # writing anything, rather than silently bootstrapping whatever was typed.
+  echo "$ENV_FILE doesn't exist yet."
+  read -rp "Create it from automation/.env.example? [y/N] " confirm_create
+  if [[ ! "$confirm_create" =~ ^[Yy] ]]; then
+    echo "Nothing created. Re-run with the correct path (or answer y to bootstrap this one)." >&2
     exit 1
   fi
-  # The template ships real-looking placeholder values for some keys (e.g.
-  # ANTHROPIC_API_KEY=your-anthropic-key), not blank ones - syncing as-is
-  # would push those placeholders as if they were real secrets. Stop here
-  # rather than continue past a freshly-created, unedited file.
-  echo "Created $ENV_FILE with placeholder values from the template."
-  echo "Edit it with your real ANTHROPIC_API_KEY / OPENAI_API_KEY / CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID, then re-run this script."
-  exit 0
+  if [[ ! -f "$ENV_EXAMPLE" ]]; then
+    echo "Error: template not found at $ENV_EXAMPLE." >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$ENV_FILE")"
+  cp "$ENV_EXAMPLE" "$ENV_FILE"
+  CREATED_FROM_TEMPLATE=1
 fi
 
 # Remember this run's (now-confirmed-valid) path as the new default, so the
-# next run without an explicit argument reuses it.
+# next run without an explicit argument reuses it. Written for a
+# freshly-created file too (not just a pre-existing one), so a first-run
+# bootstrap is actually remembered instead of re-prompting next time.
 cat > "$PATHS_YAML" <<EOF
 # Default paths used by scripts in this folder (e.g. sync-config.sh).
 # Generated/updated automatically - reflects the env file path last used.
@@ -103,6 +126,16 @@ cat > "$PATHS_YAML" <<EOF
 
 env_file: $ENV_FILE
 EOF
+
+if [[ -n "$CREATED_FROM_TEMPLATE" ]]; then
+  # The template ships real-looking placeholder values for some keys (e.g.
+  # ANTHROPIC_API_KEY=your-anthropic-key), not blank ones - syncing as-is
+  # would push those placeholders as if they were real secrets. Stop here
+  # rather than continue past a freshly-created, unedited file.
+  echo "Created $ENV_FILE with placeholder values from automation/.env.example."
+  echo "Edit it with your real ANTHROPIC_API_KEY / OPENAI_API_KEY / CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID, then re-run this script."
+  exit 0
+fi
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "Error: GitHub CLI (gh) not found. Install from https://cli.github.com/" >&2
