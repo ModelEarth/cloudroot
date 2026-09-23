@@ -17,7 +17,7 @@
  * Returns which of the provider keys this Worker manages are configured as
  * Cloudflare secrets, e.g. ["anthropic","openai"] — never the key values
  * themselves. Lets a frontend (e.g. the "keys" widget) show "server has a
- * key configured" badges without reading a local docker/.env file.
+ * key configured" badges without reading a local env file.
  */
 
 import { ChatAnthropic } from "@langchain/anthropic";
