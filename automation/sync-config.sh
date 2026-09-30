@@ -51,14 +51,22 @@ read_env_file_setting() {
     | sed -e 's/[[:space:]]#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//'
 }
 
+# A relative env_file: in paths.yaml is relative to this automation folder -
+# the same rule chat/server.mjs uses - not to wherever the script was run
+# from, so the saved path never needs to spell out the folders above the
+# webroot (e.g. ../../safe/[name].env rather than an absolute path).
+# Paths typed or passed as an argument are relative to the current folder,
+# like any other shell path.
 if [[ -n "${1:-}" && "$1" != "paths.yaml" ]]; then
   ENV_FILE="$1"
 elif [[ -f "$PATHS_YAML" ]]; then
   yaml_value=$(read_env_file_setting)
   if [[ -z "$yaml_value" ]]; then
     read -rp "No env_file: set in $PATHS_YAML yet. Path to your env file: " ENV_FILE
-  else
+  elif [[ "$yaml_value" == /* ]]; then
     ENV_FILE="$yaml_value"
+  else
+    ENV_FILE="$SCRIPT_DIR/$yaml_value"
   fi
 else
   # First run: no paths.yaml yet, and no path given.
@@ -118,13 +126,18 @@ fi
 # next run without an explicit argument reuses it. Written for a
 # freshly-created file too (not just a pre-existing one), so a first-run
 # bootstrap is actually remembered instead of re-prompting next time.
+# Saved relative to this folder (see above) so it stays machine-neutral;
+# falls back to the absolute path if perl isn't available.
+ENV_FILE="$(cd "$(dirname "$ENV_FILE")" && pwd)/$(basename "$ENV_FILE")"
+saved_env_file=$(perl -MFile::Spec -e 'print File::Spec->abs2rel(@ARGV)' "$ENV_FILE" "$SCRIPT_DIR" 2>/dev/null || true)
 cat > "$PATHS_YAML" <<EOF
 # Default paths used by scripts in this folder (e.g. sync-config.sh).
 # Generated/updated automatically - reflects the env file path last used.
+# A relative env_file: is relative to this automation folder.
 # Not committed to git (see .gitignore); pass a different path as
 # sync-config.sh's first argument to change it.
 
-env_file: $ENV_FILE
+env_file: ${saved_env_file:-$ENV_FILE}
 EOF
 
 if [[ -n "$CREATED_FROM_TEMPLATE" ]]; then
@@ -181,15 +194,38 @@ if ! gh secret list --repo "$REPO" >/dev/null 2>&1; then
   fi
 fi
 
-# Fallback for CLOUDFLARE_ACCOUNT_ID when it's not in $ENV_FILE: read it from
-# `wrangler whoami`, if Wrangler is installed and already logged in. If not
-# logged in, the sync loop below offers to run `npx wrangler login` (an
-# interactive browser flow) right there and retry. Account IDs are 32-char
-# hex, so grab the first match from the output rather than parsing
-# wrangler's table formatting, which differs across versions.
-fetch_account_id_from_wrangler() {
-  command -v npx >/dev/null 2>&1 || return 1
-  npx wrangler whoami 2>/dev/null | grep -oE '[0-9a-f]{32}' | head -n1
+# Fallback for CLOUDFLARE_ACCOUNT_ID when it's blank in $ENV_FILE: ask the
+# Cloudflare API which accounts CLOUDFLARE_API_TOKEN can reach (synced just
+# before it - see KEYS order).
+# Only used when that's exactly one account, as it is for a token made from
+# the "Edit Cloudflare Workers" template with one account selected; with
+# several, there's no safe way to pick. Account IDs are 32-char hex, which
+# avoids needing a JSON parser like jq.
+fetch_account_id_from_api() {
+  local ids
+  [[ -n "${CF_API_TOKEN:-}" ]] || return 1
+  ids=$(curl -fsS -H "Authorization: Bearer $CF_API_TOKEN" \
+    "https://api.cloudflare.com/client/v4/accounts" 2>/dev/null \
+    | grep -oE '"id"[[:space:]]*:[[:space:]]*"[0-9a-f]{32}"' | grep -oE '[0-9a-f]{32}' | sort -u) || return 1
+  [[ $(printf '%s\n' "$ids" | grep -c .) -eq 1 ]] || return 1
+  echo "$ids"
+}
+
+# Writes key=value into $ENV_FILE, replacing an existing key= line in place
+# or appending one.
+save_env_value() {
+  local key="$1" value="$2" tmp
+  tmp=$(mktemp)
+  if grep -qE "^${key}=" "$ENV_FILE"; then
+    awk -v k="$key" -v v="$value" 'index($0, k "=") == 1 { print k "=" v; next } { print }' "$ENV_FILE" > "$tmp"
+  else
+    cat "$ENV_FILE" > "$tmp"
+    [[ -z "$(tail -c1 "$ENV_FILE")" ]] || echo >> "$tmp"
+    echo "${key}=${value}" >> "$tmp"
+  fi
+  # cat rather than mv, so the env file keeps its own permissions.
+  cat "$tmp" > "$ENV_FILE"
+  rm -f "$tmp"
 }
 
 # Detects unedited template placeholders (e.g. "your-anthropic-key",
@@ -224,29 +260,23 @@ for key in "${KEYS[@]}"; do
   fi
 
   if [[ -z "$value" && "$key" == "CLOUDFLARE_ACCOUNT_ID" ]]; then
-    value=$(fetch_account_id_from_wrangler || true)
+    value=$(fetch_account_id_from_api || true)
     if [[ -n "$value" ]]; then
-      echo "  found $key via 'wrangler whoami' (not in $ENV_FILE)"
-    elif command -v npx >/dev/null 2>&1; then
-      read -rp "  CLOUDFLARE_ACCOUNT_ID not found. Run 'npx wrangler login' now (opens a browser)? [y/N] " do_login
-      if [[ "$do_login" =~ ^[Yy] ]]; then
-        npx wrangler login
-        value=$(fetch_account_id_from_wrangler || true)
-        if [[ -n "$value" ]]; then
-          echo "  found $key via 'wrangler whoami' after login"
-        fi
-      fi
+      save_env_value "$key" "$value"
+      echo "  found $key via CLOUDFLARE_API_TOKEN, saved in $ENV_FILE"
     fi
   fi
 
   if [[ -z "$value" ]]; then
     if [[ "$key" == "CLOUDFLARE_ACCOUNT_ID" ]]; then
-      echo "  skip  $key (not set in $ENV_FILE, and 'wrangler whoami' found nothing)"
-      echo "        Get it one of two ways, then either add it to $ENV_FILE or re-run:"
-      echo "          1. npx wrangler login   (opens a browser to authorize this machine),"
-      echo "             then re-run this script - it'll pick it up via 'wrangler whoami'"
-      echo "          2. Cloudflare dashboard -> Workers & Pages overview page (right"
-      echo "             sidebar) -> Account ID"
+      if [[ -z "${CF_API_TOKEN:-}" ]]; then
+        echo "  skip  $key (not set in $ENV_FILE, and no CLOUDFLARE_API_TOKEN to look it up with)"
+      else
+        echo "  skip  $key (not set in $ENV_FILE, and CLOUDFLARE_API_TOKEN doesn't reach"
+        echo "        exactly one Cloudflare account)"
+      fi
+      echo "        Copy it from the right sidebar of the Cloudflare dashboard (or the"
+      echo "        Workers & Pages overview page) into $ENV_FILE, then re-run."
     else
       echo "  skip  $key (not set in $ENV_FILE)"
     fi
@@ -255,8 +285,42 @@ for key in "${KEYS[@]}"; do
 
   printf '%s' "$value" | gh secret set "$key" --repo "$REPO" >/dev/null
   echo "  set   $key"
+
+  # Kept for the Worker URL lookup below.
+  case "$key" in
+    CLOUDFLARE_API_TOKEN) CF_API_TOKEN="$value" ;;
+    CLOUDFLARE_ACCOUNT_ID) CF_ACCOUNT_ID="$value" ;;
+  esac
 done
 
 echo
 echo "Current config on $REPO:"
 gh secret list --repo "$REPO"
+
+# Save the deployed Worker's URL back into $ENV_FILE as CLOUDFLARE_WORKER_URL,
+# so local frontends can find it. The URL is https://[worker].[subdomain].workers.dev:
+# the worker name comes from worker/wrangler.toml, and the account's
+# workers.dev subdomain from the Cloudflare API, using the same token and
+# account ID synced above. It resolves once the "Deploy LLM Proxy Worker"
+# workflow has deployed the Worker.
+
+echo
+WORKER_NAME=$(sed -nE 's/^name[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$SCRIPT_DIR/../worker/wrangler.toml" 2>/dev/null | head -n1)
+if [[ -z "${CF_API_TOKEN:-}" || -z "${CF_ACCOUNT_ID:-}" ]]; then
+  echo "  skip  CLOUDFLARE_WORKER_URL (needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID)"
+elif [[ -z "$WORKER_NAME" ]]; then
+  echo "  skip  CLOUDFLARE_WORKER_URL (no name found in worker/wrangler.toml)"
+else
+  cf_subdomain=$(curl -fsS -H "Authorization: Bearer $CF_API_TOKEN" \
+    "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/subdomain" 2>/dev/null \
+    | sed -nE 's/.*"subdomain"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' || true)
+  if [[ -z "$cf_subdomain" ]]; then
+    echo "  skip  CLOUDFLARE_WORKER_URL (couldn't read the workers.dev subdomain - the"
+    echo "        token needs Workers Scripts read access, and the account needs a"
+    echo "        workers.dev subdomain: Cloudflare dashboard -> Workers & Pages)"
+  else
+    worker_url="https://$WORKER_NAME.$cf_subdomain.workers.dev"
+    save_env_value CLOUDFLARE_WORKER_URL "$worker_url"
+    echo "  saved CLOUDFLARE_WORKER_URL=$worker_url in $ENV_FILE"
+  fi
+fi

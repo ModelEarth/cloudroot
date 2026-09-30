@@ -48,6 +48,23 @@ Getting the 4 values this needs and adding them to GitHub can be done by
 hand — see [manual.md](manual.md) ("Manual Alternative") — or with
 `sync-config.sh` below, if you keep them in a local env file.
 
+## Get a Cloudflare API token
+
+This step can't be automated: Cloudflare only creates API tokens from its
+dashboard (or from another token that already has permission to create
+tokens), so each person creates their own once.
+
+1. Cloudflare dashboard → **My Profile → API Tokens → Create Token**, and
+   pick the **"Edit Cloudflare Workers"** template. It already includes
+   Workers Scripts edit access (which also covers `sync-config.sh`'s
+   workers.dev subdomain lookup) and Account Settings read.
+   - Under **Account Resources**, select your account.
+   - Under **Zone Resources**, select a zone (domain) or choose all zones,
+     then create the token.
+2. Paste the token after `CLOUDFLARE_API_TOKEN=` in your local env file
+   (the one `paths.yaml` points at). Paste it into the file rather than
+   into a chat or terminal, so it stays out of history.
+
 ## Sync config from a local env file with `sync-config.sh`
 
 If you already keep these values in a local env file, you don't have to
@@ -99,6 +116,17 @@ reads it from the env file, pushes it with `gh secret set` (never printing
 the value to the terminal or logs), skips any key that's missing from the
 file instead of guessing, and finishes with `gh secret list` so you can
 confirm all four landed.
+
+It then saves the Worker's URL back into your env file as
+`CLOUDFLARE_WORKER_URL` (`https://[worker].[subdomain].workers.dev`): the
+worker name comes from `worker/wrangler.toml`, and your account's
+workers.dev subdomain from the Cloudflare API, using the same
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The URL responds once
+the "Deploy LLM Proxy Worker" workflow has deployed the Worker.
+
+A relative `env_file:` in `paths.yaml` is relative to this `automation/`
+folder (the same rule `chat/server.mjs` uses), so `../../safe/[name].env`
+works from wherever you run the script.
 
 If you'd rather have an AI coding assistant do this interactively (e.g. to
 adapt it to a differently-shaped `.env`), point it at this script and ask

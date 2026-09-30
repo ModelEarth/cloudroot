@@ -17,13 +17,13 @@ These values are provided to GitHub Actions runners during a workflow run — th
 
 ## 2. Get your Cloudflare credentials
 
-1. Cloudflare dashboard → **My Profile → API Tokens → Create Token**
-   - Use the "Edit Cloudflare Workers" template, scoped to your account.
-2. Note your **Account ID** (right sidebar of the Cloudflare dashboard, or
-   `Workers & Pages` overview page) — or skip this if you'll use
-   `sync-config.sh` instead: it falls back to reading the Account ID from
-   `wrangler whoami` when it's not in your `.env` file (after a one-time
-   `npx wrangler login`).
+1. Create an API token: see
+   [Get a Cloudflare API token](README.md#get-a-cloudflare-api-token).
+2. Save your **Account ID** to `CLOUDFLARE_ACCOUNT_ID` in your local env
+   file, copying it from the right sidebar of the Cloudflare dashboard (or
+   the `Workers & Pages` overview page). Or leave it blank and run
+   `sync-config.sh`, which looks up the Account ID with your
+   `CLOUDFLARE_API_TOKEN` and saves it there for you.
 
 ## 3. Add these to GitHub
 

@@ -4,4 +4,4 @@
 # sync-config.sh's first argument to change it.
 # Recommmended: Change your env_file path and file name to something unique.
 
-env_file: ../../safe/cloudroot.env
+env_file: ../../safe/your-unique-name.env
