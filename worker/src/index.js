@@ -27,8 +27,7 @@ import { HumanMessage, AIMessage } from "@langchain/core/messages";
 // Restrict which origins may call this Worker.
 const ALLOWED_ORIGINS = [
   "https://model.earth",
-  "https://dreamstudio.com",
-  "http://localhost:8887", // adjust to your local dev port
+  "http://localhost:3700", // CloudRoot (PORT=3700 node chat/server.mjs)
 ];
 
 function corsHeaders(origin) {
