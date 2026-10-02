@@ -1,0 +1,7 @@
+# Copy this file to .dev.vars for local `wrangler dev` testing.
+# .dev.vars is git-ignored — never commit a real secret.
+
+WEBHOOK_SECRET=choose-a-long-random-string
+
+# Fine-grained GitHub token, archivist1 only, Contents read/write.
+ARCHIVIST_TOKEN=github_pat_xxxxxxxx
