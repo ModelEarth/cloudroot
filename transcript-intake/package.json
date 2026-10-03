@@ -1,0 +1,14 @@
+{
+  "name": "transcript-intake",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/worker.test.js test/naming.test.js test/github.test.js"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

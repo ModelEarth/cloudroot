@@ -1,0 +1,26 @@
+{
+  "webhookBodyType": "advanced",
+  "meetingSoftware": "Google Meet",
+  "meetingTitle": "Weekly sync",
+  "meetingStartTimestamp": "2025-06-15T17:00:00.000Z",
+  "meetingEndTimestamp": "2025-06-15T17:28:00.000Z",
+  "transcript": [
+    {
+      "personName": "Alex",
+      "timestamp": "2025-06-15T17:00:05.000Z",
+      "transcriptText": "Let's get started."
+    },
+    {
+      "personName": "Priya",
+      "timestamp": "2025-06-15T17:00:12.000Z",
+      "transcriptText": "Sounds good, I have three updates."
+    }
+  ],
+  "chatMessages": [
+    {
+      "personName": "Priya",
+      "timestamp": "2025-06-15T17:05:00.000Z",
+      "chatMessageText": "Link: https://example.com/doc"
+    }
+  ]
+}
