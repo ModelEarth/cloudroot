@@ -1,4 +1,4 @@
-On initial agent usage, invoke a sandbox using steps in PYTHON.md
+On initial agent usage, invoke a sandbox using steps in support/python/PYTHON.md
 
 Do not execute code external to this CloudRepos webroot.
 Do not modify files external to this CloudRepos webroot.
