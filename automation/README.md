@@ -4,9 +4,20 @@
 
 ## `sync-config.sh`
 
-Copies 4 Cloudflare Worker config values (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) from a local env file into a
-repo's GitHub Actions config, via the GitHub CLI.
+Copies the Cloudflare Worker's config values from a local env file into a
+repo's GitHub Actions config, via the GitHub CLI:
+
+- the 4 deploy values: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
+  `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+- the sign-in values: `BETTER_AUTH_SECRET`, `BROWSER_ENCRYPTION_PRIVATE_KEY`,
+  and each social provider's `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET`
+- `POSTGRES_URL`, only when you add `--database` — the env file's
+  `POSTGRES_URL` may be the database chat uses, which the Worker shouldn't
+  share (see [worker/README.md](../worker/README.md#database))
+
+GitHub reserves the `GITHUB_` prefix for secret names, so the GitHub OAuth
+app's `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are stored as
+`GH_CLIENT_ID` / `GH_CLIENT_SECRET`; the deploy workflow maps them back.
 
 The env file path is remembered for you: pass it once as the first
 argument, and the script writes it to `paths.yaml` (generated here,
@@ -108,21 +119,23 @@ its real path instead:
 ```bash
 ./sync-config.sh /path/to/cloud.env ModelEarth/CloudRoot
 ./sync-config.sh /path/to/cloud.env owner/other-repo   # for another repo
+./sync-config.sh paths.yaml ModelEarth/CloudRoot --database   # also POSTGRES_URL
 ```
 
 It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and
-authenticated (`gh auth status`). For each of the four values above, it
+authenticated (`gh auth status`). For each of the values above, it
 reads it from the env file, pushes it with `gh secret set` (never printing
 the value to the terminal or logs), skips any key that's missing from the
-file instead of guessing, and finishes with `gh secret list` so you can
-confirm all four landed.
+file or still a template placeholder instead of guessing, and finishes with
+`gh secret list` so you can confirm they landed.
 
 It then saves the Worker's URL back into your env file as
 `CLOUDFLARE_WORKER_URL` (`https://[worker].[subdomain].workers.dev`): the
 worker name comes from `worker/wrangler.toml`, and your account's
 workers.dev subdomain from the Cloudflare API, using the same
 `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The URL responds once
-the "Deploy LLM Proxy Worker" workflow has deployed the Worker.
+the "Deploy Worker" workflow has deployed the Worker. The site itself is at
+https://cloud.model.earth.
 
 A relative `env_file:` in `paths.yaml` is relative to this `automation/`
 folder (the same rule `chat/server.mjs` uses), so `../../safe/[name].env`
@@ -139,10 +152,10 @@ env file should use that name (not the retired `CLAUDE_API_KEY`) for
 for its current set of keys, including `CLAUDE_CODE_OAUTH_TOKEN` as a
 subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
 
-This only touches the four values a Cloudflare Worker deploy needs — your
-local env file likely holds many more keys for other services (the Rust
-API, Arts Engine, Sanity, Better Auth, Supabase, etc.) that this script
-intentionally leaves alone.
+This only touches the values the Cloudflare Worker uses — your local env
+file likely holds many more keys for other services (the Rust API, Arts
+Engine, Sanity, Supabase, etc.) that this script intentionally leaves
+alone.
 
 ## Testing from a fork / other repos
 

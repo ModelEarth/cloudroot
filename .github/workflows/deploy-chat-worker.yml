@@ -1,11 +1,7 @@
 name: Deploy Chat (Next.js) to Cloudflare
 
+# On hold (see PLAN.md, "Superseded"): runs only when started by hand.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "chat/**"
-      - ".github/workflows/deploy-chat-worker.yml"
   workflow_dispatch: {}
 
 jobs:

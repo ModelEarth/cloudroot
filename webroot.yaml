@@ -1,0 +1,14 @@
+# Site config for pages served from CloudRoot. localsite.js (loadWebrootYaml)
+# reads /webroot.yaml before the shared docker/webroot.yaml.
+
+# Sign-in widget and API. The same paths work on cloud.model.earth, where the
+# Worker serves /auth/ (auth submodule) and /api/, and locally, where
+# chat/server.mjs serves /auth/js/ (chat/auth/js) and /api/auth/.
+# Without this block, localsite assumes the chat app under /chat/.
+auth:
+  plugin_url_development: /auth/js/auth-plugin.js
+  modal_url_development: /auth/js/auth-modal.js
+  api_url_development: /api
+  plugin_url_production: /auth/js/auth-plugin.js
+  modal_url_production: /auth/js/auth-modal.js
+  api_url_production: /api

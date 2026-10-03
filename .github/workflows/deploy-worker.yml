@@ -1,39 +1,95 @@
-name: Deploy LLM Proxy Worker
+name: Deploy Worker (cloud.model.earth)
 
+# One Worker serves the whole site: static files assembled from the webroot
+# (submodules included) plus the API under /api/. Any change outside chat/
+# can affect the site, so every push to main deploys.
 on:
   push:
     branches: [main]
-    paths:
-      - "worker/**"
-      - ".github/workflows/deploy-worker.yml"
+    paths-ignore:
+      - "chat"
+      - ".github/workflows/deploy-chat-worker.yml"
   workflow_dispatch: {}
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: worker
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Push LLM API keys into Cloudflare (from GitHub Secrets)
+      # The auth submodule is a Next.js app exported to plain files (auth/out).
+      - name: Build sign-in pages (auth static export)
+        working-directory: auth
         run: |
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY
-          echo "${{ secrets.OPENAI_API_KEY }}" | npx wrangler secret put OPENAI_API_KEY
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install Worker dependencies
+        working-directory: worker
+        run: npm ci
+
+      - name: Assemble static files (worker/dist)
+        working-directory: worker
+        run: npm run build
+
+      # GitHub secrets -> Worker secrets, uploaded with the new version.
+      # Unset or empty GitHub secrets are skipped, so a value set directly in
+      # Cloudflare (wrangler secret put) isn't overwritten with a blank.
+      # GitHub reserves the GITHUB_ prefix, so the GitHub OAuth app's pair is
+      # stored as GH_CLIENT_ID / GH_CLIENT_SECRET.
+      - name: Collect Worker secrets
+        working-directory: worker
+        run: |
+          node -e '
+            const names = process.argv.slice(1);
+            const secrets = {};
+            for (const name of names) {
+              const value = process.env[name];
+              if (value) secrets[name] = value;
+            }
+            require("fs").writeFileSync(process.env.RUNNER_TEMP + "/worker-secrets.json", JSON.stringify(secrets));
+            console.log("Secrets to upload:", Object.keys(secrets).join(", ") || "(none)");
+          ' ANTHROPIC_API_KEY OPENAI_API_KEY BETTER_AUTH_SECRET POSTGRES_URL BROWSER_ENCRYPTION_PRIVATE_KEY \
+            GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET \
+            MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET LINKEDIN_CLIENT_ID LINKEDIN_CLIENT_SECRET \
+            DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          BROWSER_ENCRYPTION_PRIVATE_KEY: ${{ secrets.BROWSER_ENCRYPTION_PRIVATE_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GITHUB_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
+          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
+          FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
 
       - name: Deploy Worker
-        run: npx wrangler deploy
+        working-directory: worker
+        run: npx wrangler deploy --secrets-file "$RUNNER_TEMP/worker-secrets.json"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Remove secrets file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/worker-secrets.json"

@@ -1,184 +1,116 @@
-# PLAN.md — CloudRoot: Dual Deploy to Vercel + Cloudflare
+# PLAN.md — CloudRoot on Cloudflare
 
-Goal: keep `chat/` (Next.js) deploying to Vercel as-is, while adding a
-second, independent deploy path to Cloudflare Workers via OpenNext.
-`worker/` (the LangChain LLM proxy) already deploys to Cloudflare and is
-unaffected by any of this.
+Goal: one Cloudflare Worker at **cloud.model.earth** serving both the website
+and its API, with sign-in on Postgres (Neon preferred, Supabase supported).
+`chat/` (Next.js) keeps deploying to Vercel and is not part of the
+Cloudflare site.
 
 Repos involved:
-- `CloudRoot` — https://github.com/ModelEarth/CloudRoot (root repo, holds `worker/`, workflows)
-- `chat` — https://github.com/ModelEarth/chat (submodule, Next.js app)
+- `CloudRoot`: https://github.com/ModelEarth/CloudRoot (holds `worker/`, workflows)
+- `auth`: https://github.com/ModelEarth/auth (sign-in pages; see `auth/PLAN.md`)
+- `keys`, `localsite`, `requests`, `know`, `feed`, `trade`: static content in the build
+- `chat`: https://github.com/ModelEarth/chat (Vercel; not deployed here)
 
----
+## How it fits together
 
-# Additions for chat/package.json
-
-Merge these into the existing `chat/package.json` — don't replace the file,
-since it already has the full Next.js dependency tree Vercel relies on.
-
-## scripts (add alongside existing "dev"/"build"/"start")
-
-```json
-"cf:build": "opennextjs-cloudflare build",
-"cf:deploy": "opennextjs-cloudflare deploy",
-"cf:preview": "opennextjs-cloudflare preview"
+```
+cloud.model.earth ──┬─ /api/*     Worker code: /api/chat, /api/key-status,
+                    │             keys widget APIs, /api/auth (sign-in)
+                    └─ all else   static files built from the webroot
+                                  (submodules checked out), minus chat/,
+                                  with auth/ replaced by its static export
 ```
 
-## devDependencies (add alongside existing devDependencies)
+- **Static files.** Workers serve a folder of static files, so every path
+  except `/api/*` comes from `worker/dist`, assembled from the webroot by
+  `worker/scripts/build-static.mjs`.
+- **API.** `/api/chat` and `/api/key-status` stay as they were, joined by the
+  small APIs moved from `chat/server.mjs` and by sign-in.
+- **Browser access.** Pages and API share one origin, so the site's own
+  browser calls need no allowed-origins entry. `ALLOWED_ORIGINS` in
+  `wrangler.toml` lists only other sites (e.g. https://model.earth).
+- **No `api.model.earth`.** The API is at `cloud.model.earth/api/...`.
 
-```json
-"@opennextjs/cloudflare": "^0.6.0",
-"wrangler": "^3.99.0"
-```
+## Steps
 
-Check https://www.npmjs.com/package/@opennextjs/cloudflare for the current
-version before pinning — this adapter moves quickly.
+### 1. Build folder in CI ✅
+`deploy-worker.yml` checks out submodules, builds the `auth` static export,
+and runs `npm run build` in `worker/` to assemble `worker/dist`. It deploys on
+every push to `main` except chat-only changes.
 
-## Note on the pnpm/Corepack fix already in this repo
+### 2. Static files and custom domain ✅
+`worker/wrangler.toml`: `[assets] directory = "./dist"`, with
+`run_worker_first = ["/api/*", "/sanity", "/sanity/*"]`, and
+`routes = [{ pattern = "cloud.model.earth", custom_domain = true }]`.
+The Worker is renamed `llm-proxy-worker` → `cloudroot`, since it now serves
+the whole site. The old `llm-proxy-worker` stays deployed until it's deleted
+in the Cloudflare dashboard.
 
-The root `package.json`'s `check-package-sync.js` compares `packageManager`
-and `next` versions between root and `chat/package.json`. Adding the two
-devDependencies above doesn't affect that check — it only watches
-`packageManager` and `next`, not `@opennextjs/cloudflare` or `wrangler`.
+### 3. Route only /api/* to Worker code ✅
+`worker/src/index.js` handles `/api/*` (and the `/sanity` proxy), and hands
+anything else back to the static files.
 
----
+### 4. Deploy and check pages ✅
+localsite's sign-in defaults assume the chat app under `/chat/`. Rather
+than change shared localsite code, CloudRoot ships `/webroot.yaml` (read by
+localsite before `docker/webroot.yaml`) pointing the widget at
+`/auth/js/auth-plugin.js` and the API at `/api`. The same paths work locally,
+where `chat/server.mjs` serves `/auth/js/` from `chat/auth/js/`.
+`/api/save-file` stays local-only; on Cloudflare localsite's editor falls
+back to the clipboard, as it already does on static hosts.
 
-## 0. Prerequisite check — confirm the Postgres driver blocker
+### 5. Small APIs from chat/server.mjs ✅
+Moved into `worker/src/keys.js` and `worker/src/sanity.js`:
+- `/api/server-keys` (served by the same handler as `/api/key-status`),
+  `/api/public-key`, `/api/validate-key`. Used by the keys widget and
+  `requests/engine`.
+- `/api/sanity-status` and the `/sanity/*` proxy, forwarding to the hosted
+  Sanity site at `SANITY_SITE_URL` (the Worker can't run the site itself).
 
-Before anything else, open `chat/lib/db` (or wherever the Drizzle client is
-constructed) and check the import:
+### 6. Sign-in on the Worker ✅ (database pending)
+`worker/src/auth/` runs BetterAuth, replacing chat's Next.js routes for this
+site (`/api/auth/*`, `/api/oauth/*`, `configured-providers`, `db-status`).
+The `auth` submodule is a static export served at `/auth/`, and carries the
+vanilla sign-in widget at `/auth/js/`.
 
-- `drizzle-orm/postgres-js` (using the `postgres` npm package) →
-  **blocks the Cloudflare build**. This package uses raw TCP sockets that
-  don't work on Workers and will fail with
-  `UnhandledSchemeError: Reading from "cloudflare:sockets"`.
-- `drizzle-orm/node-postgres` (using `pg`) → fine, proceed.
+- **Database, generic.** `POSTGRES_URL` picks the driver: Neon's HTTP driver
+  for `*.neon.tech`, or postgres.js over TCP for any other Postgres
+  (Supabase via its pooler URL).
+- **Hashing on Postgres.** Passwords are hashed with pgcrypto's bcrypt inside
+  the database. The Workers CPU limit (10 ms on the free plan) counts only
+  compute, not time waiting on the database, so the Worker sends the
+  password, waits, and gets the result in the same request, with no
+  callback. Legacy scrypt hashes from chat are checked once and rewritten as
+  bcrypt.
+- **Stateless until Neon exists.** With no `POSTGRES_URL`, sessions live in an
+  encrypted cookie: social sign-in works, email/password is off.
 
-`chat/next.config.mjs` currently lists `serverExternalPackages: ['drizzle-orm', 'postgres']`,
-which strongly suggests the `postgres` package is in use. If so:
-
-- [ ] Swap the Cloudflare-path DB client to `drizzle-orm/node-postgres` + `pg`
-- [ ] Keep Vercel's existing client untouched (it can keep using `postgres`/`POSTGRES_URL` directly — this only matters for the Cloudflare build)
-- [ ] Wire the Cloudflare-path client to read from the Hyperdrive binding (see step 4) instead of `process.env.POSTGRES_URL` directly, when running on Workers
-
-This step happens in application code, not config — do this first, since
-nothing past this point will build if it's skipped.
-
----
-
-## 1. Add Cloudflare config files to `chat/`
-
-Working directly in the `modelearth/chat` repo (not through the CloudRoot
-submodule pointer):
-
-- [ ] Add `chat/open-next.config.ts`
-- [ ] Add `chat/wrangler.jsonc`
-- [ ] Append to `chat/.gitignore`:
-  ```
-  .open-next/
-  .wrangler/
-  ```
-- [ ] Merge into `chat/package.json`:
-  - scripts: `cf:build`, `cf:deploy`, `cf:preview`
-  - devDependencies: `@opennextjs/cloudflare`, `wrangler`
-  (see `package.json.additions.md` for exact snippets)
-- [ ] `npm install`, commit, push to `modelearth/chat` `main`
-
----
-
-## 2. Bump the CloudRoot submodule pointer
-
-Back in `CloudRoot`:
-
-```bash
-git submodule update --remote chat
-git add chat
-git commit -m "Bump chat submodule for Cloudflare deploy support"
-git push
-```
-
----
-
-## 3. Add the GitHub Actions workflow
-
-- [ ] Add `CloudRoot/.github/workflows/deploy-chat-worker.yml`
-  (already drafted — reuses `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`
-  secrets already set up for `worker/`)
-
----
-
-## 4. Create the Hyperdrive binding (only if step 0 applies)
-
-One-time setup, run locally with Wrangler CLI logged in:
-
-```bash
-npx wrangler hyperdrive create chat-db --connection-string="<Supabase POSTGRES_URL>"
-```
-
-- [ ] Copy the returned `id` into `chat/wrangler.jsonc`'s `hyperdrive[0].id`
-- [ ] Commit that change to `modelearth/chat`, bump the submodule pointer again (step 2)
-
----
-
-## 5. Set Cloudflare Worker secrets for `chat-nextjs`
-
-The `chat` app needs its own runtime secrets on Cloudflare (separate from
-`worker/`'s `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`). From `chat/`:
-
-```bash
-npx wrangler secret put BETTER_AUTH_SECRET
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-npx wrangler secret put GOOGLE_GENERATIVE_AI_API_KEY
-# ...and any other secrets from chat/.env.example that the app needs at runtime
-```
-
-- [ ] Decide whether to run these manually once, or add them to
-      `deploy-chat-worker.yml` the same way `deploy-worker.yml` pushes
-      `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` from GitHub Secrets — recommended
-      if secrets rotate, since manual `wrangler secret put` won't survive
-      a secret rotation without someone remembering to rerun it
-- [ ] If added to the workflow, add matching entries in GitHub
-      (**Settings → Secrets and variables → Actions**) for each one
-
----
-
-## 6. First deploy — do it locally before trusting CI
-
-```bash
-cd chat
-npm install
-npm run cf:build
-npm run cf:preview   # sanity check locally against the Workers runtime
-npm run cf:deploy    # first real deploy
-```
-
-- [ ] Confirm the Worker URL Cloudflare prints
-      (`https://chat-nextjs.<your-subdomain>.workers.dev`)
-- [ ] Load a few pages that touch: auth (BetterAuth login), a DB-backed
-      page (chat history), and RAG (a query that hits Pinecone) — these
-      are the three subsystems most likely to behave differently on
-      Workers vs. Vercel
-- [ ] Check Image Optimization on any page using `next/image`, since
-      OpenNext's support can lag Vercel's native implementation
-
----
-
-## 7. Enable CI
-
-- [ ] Push a trivial change under `chat/**` (via the submodule bump) to
-      confirm `deploy-chat-worker.yml` fires and succeeds end to end
-- [ ] Confirm `worker/**` changes still deploy `llm-proxy-worker`
-      independently and haven't been affected by any of the above
-
----
+Remaining (needs accounts and credentials, not code):
+- [ ] Create the Neon database, run `auth/db/0001_*.sql` and `0002_*.sql`,
+      and set `POSTGRES_URL` (`sync-config.sh ... --database`). Don't use
+      chat's Supabase database: chat's scrypt can't verify the Worker's bcrypt
+      hashes (see `worker/README.md`, "Database").
+- [ ] Register OAuth apps with callback
+      `https://cloud.model.earth/api/auth/callback/<provider>`, and add their
+      client id and secret to the env file (the GitHub app's pair syncs as
+      `GH_CLIENT_ID` / `GH_CLIENT_SECRET`).
+- [ ] Copy existing users from Supabase to Neon when chat moves to Neon
+      (`auth/PLAN.md`, phase 2).
 
 ## End state
 
-| | Vercel | Cloudflare |
+| | Where | Deployed by |
 |---|---|---|
-| `chat/` (Next.js) | deploys automatically via Vercel's git integration, unchanged | deploys via `deploy-chat-worker.yml` → OpenNext → `chat-nextjs` Worker |
-| `worker/` (LLM proxy) | not deployed here | deploys via `deploy-worker.yml` → `llm-proxy-worker` |
+| Website (webroot + submodules) | cloud.model.earth | `deploy-worker.yml` → Worker static files |
+| API (`/api/*`) | cloud.model.earth/api | `deploy-worker.yml` → Worker code |
+| Sign-in pages | cloud.model.earth/auth/ | `auth` static export, same workflow |
+| `chat/` (Next.js) | Vercel | Vercel's git integration, unchanged |
 
-Both Cloudflare Workers deploy independently and can redeploy on every
-merge to `main`, as decided earlier — double-deploying is intentional, not
-a bug to fix.
+## Superseded: chat on Cloudflare via OpenNext
+
+The earlier plan deployed `chat/` itself to Cloudflare through OpenNext
+(`deploy-chat-worker.yml`, Hyperdrive for its Postgres driver). It's on
+hold: OpenNext's Cloudflare adapter doesn't support the Node runtime that
+Next.js 16 requires for proxy files (see README.md). Chat's pieces this site
+needs (sign-in and the small APIs) now run in the CloudRoot Worker instead.
+`deploy-chat-worker.yml` only runs when started by hand.

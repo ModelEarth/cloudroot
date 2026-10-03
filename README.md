@@ -33,14 +33,19 @@ Site comes up at http://localhost:3700
 | `localsite` | Shared navigation and map scripts |
 | `trade` | Trade data |
 
-## Worker
+## Cloudflare: cloud.model.earth
 
-The `worker/` folder holds a Cloudflare Worker that keeps LLM API keys
-server-side and exposes a single `/api/chat` endpoint, so frontend code never
-handles a key directly. GitHub Actions deploys it and pushes keys from GitHub
-Secrets into Cloudflare Secrets.
+The `worker/` folder holds a Cloudflare Worker that serves
+[cloud.model.earth](https://cloud.model.earth): the static site built from
+this webroot and its submodules (minus `chat/`), plus the API under `/api/`:
+the LLM proxy, the keys widget endpoints, and sign-in (BetterAuth on Postgres,
+with the `auth` submodule's pages at `/auth/`). GitHub Actions builds and
+deploys it on every push to `main`, pushing config from GitHub secrets into
+the Worker.
 
-See [worker/README.md](worker/README.md) for setup, secrets and deployment.
+See [worker/README.md](worker/README.md) for setup, secrets and deployment,
+and [PLAN.md](PLAN.md) for the migration steps.
+
 ## Status: Working ✅
 
 The chat submodule deploys successfully on Vercel:  

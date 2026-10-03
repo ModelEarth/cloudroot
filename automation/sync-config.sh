@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-# Copies 4 Cloudflare Worker config values (ANTHROPIC_API_KEY, OPENAI_API_KEY,
-# CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID) from a local env file into a
-# repo's GitHub Actions config, via the GitHub CLI.
+# Copies the Cloudflare Worker's config values from a local env file into a
+# repo's GitHub Actions config, via the GitHub CLI: the 4 deploy values
+# (ANTHROPIC_API_KEY, OPENAI_API_KEY, CLOUDFLARE_API_TOKEN,
+# CLOUDFLARE_ACCOUNT_ID) plus the sign-in values (BETTER_AUTH_SECRET,
+# BROWSER_ENCRYPTION_PRIVATE_KEY and each social provider's
+# <PROVIDER>_CLIENT_ID / _SECRET). Values missing from the env file, or still
+# template placeholders, are skipped.
+#
+# GitHub reserves the GITHUB_ prefix for secret names, so GITHUB_CLIENT_ID /
+# GITHUB_CLIENT_SECRET are stored as GH_CLIENT_ID / GH_CLIENT_SECRET;
+# .github/workflows/deploy-worker.yml maps them back.
+#
+# POSTGRES_URL is synced only with --database, since the env file's
+# POSTGRES_URL may be a database shared with chat (see worker/README.md,
+# "Database"). Pass --database once it holds the Worker's own database.
 #
 # Lives here in CloudRoot/automation/, not inside any one repo's worker/
 # folder: without moving it, CloudRoot/automation is usable by agents working
@@ -9,7 +21,7 @@
 # 8887, etc.) via a relative path like ../CloudRoot/automation/sync-config.sh,
 # instead of each repo needing its own duplicate copy.
 #
-# Usage: ./sync-config.sh [path-to-env-file] [github-owner/repo]
+# Usage: ./sync-config.sh [path-to-env-file] [github-owner/repo] [--database]
 # Default env file path (when no path is passed, or "paths.yaml" is passed
 # literally as a placeholder meaning "use the remembered default") comes
 # from paths.yaml's env_file: key, next to this script. paths.yaml is
@@ -31,6 +43,14 @@
 # owner/repo, works too but is easy to mistype or misread.
 
 set -euo pipefail
+
+# Pull the --database flag out of the positional arguments.
+SYNC_DATABASE=""
+positional=()
+for arg in "$@"; do
+  if [[ "$arg" == "--database" ]]; then SYNC_DATABASE=1; else positional+=("$arg"); fi
+done
+set -- "${positional[@]+"${positional[@]}"}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATHS_YAML="$SCRIPT_DIR/paths.yaml"
@@ -100,7 +120,12 @@ else
   read -rp "GitHub account of your CloudRoot fork: " fork_account
   REPO="$fork_account/CloudRoot"
 fi
-KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID)
+KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+  BETTER_AUTH_SECRET BROWSER_ENCRYPTION_PRIVATE_KEY
+  GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
+  MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET LINKEDIN_CLIENT_ID LINKEDIN_CLIENT_SECRET
+  DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET)
+if [[ -n "$SYNC_DATABASE" ]]; then KEYS+=(POSTGRES_URL); fi
 
 CREATED_FROM_TEMPLATE=""
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -233,10 +258,11 @@ save_env_value() {
 # exact hardcoded string per key - the exact wording of ModelEarth/docker's
 # .env.example has changed before, and an exact-string check silently stops
 # catching a placeholder the moment the wording changes, letting it sync as
-# if it were a real secret. Matches "your-...-key"/"your-...-token" (any
-# words in between), case-insensitively.
+# if it were a real secret. Matches anything starting "your-"/"your_" (e.g.
+# "your-github-client-id"), plus the CHANGE_ME... style used for
+# BETTER_AUTH_SECRET.
 is_placeholder_value() {
-  [[ "$1" =~ ^[Yy]our[-_].*(key|token)$ ]]
+  [[ "$1" =~ ^[Yy]our[-_] || "$1" =~ ^(CHANGE_ME|changeme) ]]
 }
 
 echo "Syncing config from $ENV_FILE into $REPO ..."
@@ -283,8 +309,10 @@ for key in "${KEYS[@]}"; do
     continue
   fi
 
-  printf '%s' "$value" | gh secret set "$key" --repo "$REPO" >/dev/null
-  echo "  set   $key"
+  secret_name="$key"
+  if [[ "$key" == GITHUB_* ]]; then secret_name="GH_${key#GITHUB_}"; fi
+  printf '%s' "$value" | gh secret set "$secret_name" --repo "$REPO" >/dev/null
+  echo "  set   $secret_name"
 
   # Kept for the Worker URL lookup below.
   case "$key" in
@@ -301,8 +329,8 @@ gh secret list --repo "$REPO"
 # so local frontends can find it. The URL is https://[worker].[subdomain].workers.dev:
 # the worker name comes from worker/wrangler.toml, and the account's
 # workers.dev subdomain from the Cloudflare API, using the same token and
-# account ID synced above. It resolves once the "Deploy LLM Proxy Worker"
-# workflow has deployed the Worker.
+# account ID synced above. It resolves once the "Deploy Worker" workflow has
+# deployed the Worker. (The site itself is at https://cloud.model.earth.)
 
 echo
 WORKER_NAME=$(sed -nE 's/^name[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$SCRIPT_DIR/../worker/wrangler.toml" 2>/dev/null | head -n1)
