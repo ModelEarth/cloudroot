@@ -20,6 +20,10 @@ Launch site, each time (port can be changed):
 
 Site comes up at http://localhost:3700
 
+## Orchestration
+
+Instead of maintaining Dockerfiles and a Kubernetes cluster, Cloudflare Workers Builds orchestrates deployment directly from GitHub. Each Worker is connected to the repo and given a root directory, the folder that holds its Wrangler configuration file and where its build command runs. On each push, Cloudflare starts a fresh container from its [managed build image](https://developers.cloudflare.com/pages/configuration/build-image/), clones the repo with its submodules, runs that folder's build command, and deploys with npx wrangler deploy. A build and deploy triggers for each Worker only when a commit touches its watch paths, so the repo's folder and submodule layout does the job a Kubernetes manifest would, and the build image stands in for a Docker base image.
+
 ## Submodules
 
 | Submodule | Purpose |
