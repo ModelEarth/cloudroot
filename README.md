@@ -1,6 +1,6 @@
 # CloudRoot
 
-A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.
+A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Generates Cloudflare site at [cloud.model.earth](https://cloud.model.earth)
 
 The chat submodule deploys to Vercel directly. [opennext.js](https://opennext.js.org)
 is included for Cloudflare Workers deployment but is not currently in use for
