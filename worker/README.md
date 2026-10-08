@@ -103,7 +103,7 @@ three steps. By hand:
 **The Worker's database is the Neon project `cloudroot`.** chat hashes
 passwords the same way (`chat/lib/auth/password.ts`), so chat should move to
 this database rather than the Worker to chat's Supabase one (`auth/PLAN.md`,
-open items 3-4). Users aren't copied from Supabase. Until chat moves, the env
+open item 4). Users aren't copied from Supabase. Until chat moves, the env
 file keeps the Worker's database as `AUTH_POSTGRES_URL`, apart from chat's
 `POSTGRES_URL`, and `sync-config.sh` syncs `POSTGRES_URL` only with
 `--database`.

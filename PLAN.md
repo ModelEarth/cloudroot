@@ -93,9 +93,9 @@ Remaining:
       `https://cloud.model.earth/api/auth/callback/<provider>`, and add their
       client id and secret to the env file (the GitHub app's pair syncs as
       `GH_CLIENT_ID` / `GH_CLIENT_SECRET`).
-- [ ] Point chat at the same Neon database, after porting its
-      Supabase-specific migrations (`auth/PLAN.md`, open items 3-4). Users
-      aren't copied from Supabase.
+- [ ] Point chat at the same Neon database and run its migrations there;
+      the Neon versions are in `chat/lib/db/migrations/neon/`
+      (`auth/PLAN.md`, open item 4). Users aren't copied from Supabase.
 
 ## End state
 
