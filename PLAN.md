@@ -95,8 +95,8 @@ Remaining:
       `GH_CLIENT_ID` / `GH_CLIENT_SECRET`).
 - [x] chat's data in its own Neon project, `chat`
       (`automation/setup-neon-chat.mjs`); the user database stays `cloudroot`.
-- [ ] Set chat's `POSTGRES_URL` and `AUTH_POSTGRES_URL` on Vercel
-      (`automation/vercel-env.mjs`, `auth/PLAN.md`, open item 4).
+- [x] chat's `POSTGRES_URL` and `AUTH_POSTGRES_URL` set on the Vercel
+      project `modelearth` (`automation/vercel-env.mjs`).
 
 ## End state
 

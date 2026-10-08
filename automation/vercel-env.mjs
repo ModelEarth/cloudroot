@@ -74,11 +74,33 @@ if (configArg) {
 
 // ---- Vercel API -----------------------------------------------------------
 
+// Network failures are retried up to RETRIES times. GETs retry on any
+// network error; writes only when the connection never opened, so a
+// redeploy or env change can't be sent twice.
+const RETRIES = 3;
+const CONNECT_ERRORS = new Set(["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ENETUNREACH", "EHOSTUNREACH"]);
+
+async function fetchWithRetry(url, init) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (error) {
+      const code = error.cause?.code || error.code || "";
+      const retryable = init.method === "GET" || CONNECT_ERRORS.has(code);
+      if (!retryable || attempt >= RETRIES) {
+        fail(`couldn't reach ${url.host} (${code || error.message}) after ${attempt + 1} attempt${attempt ? "s" : ""}.`);
+      }
+      console.log(`  retry ${url.host} (${code || error.message}), ${attempt + 1} of ${RETRIES}`);
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
+  }
+}
+
 async function vercel(method, path, { teamId, body, query = {} } = {}) {
   const url = new URL(path, VERCEL_API);
   for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
   if (teamId) url.searchParams.set("teamId", teamId);
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
