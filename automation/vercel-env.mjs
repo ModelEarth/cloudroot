@@ -5,7 +5,10 @@
 // printed.
 //
 // By default it sets chat's two databases:
-//   POSTGRES_URL       from CHAT_POSTGRES_URL: chat's data (setup-neon-chat.mjs)
+//   CHAT_POSTGRES_URL  from CHAT_POSTGRES_URL: chat's data (setup-neon-chat.mjs),
+//   POSTGRES_URL       duplicated from CHAT_POSTGRES_URL, the standard name
+//                      Vercel's Postgres integrations use (chat reads
+//                      CHAT_POSTGRES_URL first, then POSTGRES_URL)
 //   AUTH_POSTGRES_URL  from AUTH_POSTGRES_URL: the sign-in database the
 //                      CloudRoot Worker uses (setup-neon.mjs), so chat and the
 //                      Worker share users
@@ -63,6 +66,7 @@ if (!projectNames.length) {
 // target (on Vercel) <- source (in the env file), and the environments a
 // new variable gets.
 const vars = [
+  { source: "CHAT_POSTGRES_URL", target: "CHAT_POSTGRES_URL", environments: NEW_VAR_TARGETS },
   { source: "CHAT_POSTGRES_URL", target: "POSTGRES_URL", environments: NEW_VAR_TARGETS },
   { source: "AUTH_POSTGRES_URL", target: "AUTH_POSTGRES_URL", environments: NEW_VAR_TARGETS },
 ];

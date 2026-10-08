@@ -103,11 +103,12 @@ three steps. By hand:
 **The Worker's database is the Neon project `cloudroot`, the user
 database.** chat signs in against it too, as `AUTH_POSTGRES_URL`, and hashes
 passwords the same way (`chat/lib/auth/password.ts`). chat's own data is in
-a separate Neon project, `chat`, which chat reads as `POSTGRES_URL`
-(`automation/setup-neon-chat.mjs`). In the env file the user database is
-`AUTH_POSTGRES_URL`, which `sync-config.sh` sends as this Worker's
-`POSTGRES_URL` secret; the env file's own `POSTGRES_URL` is chat's, synced
-only with `--database`.
+a separate Neon project, `chat`, which chat reads as `CHAT_POSTGRES_URL`
+(`automation/setup-neon-chat.mjs`; on Vercel it's duplicated as
+`POSTGRES_URL`, the standard name Vercel's Postgres integrations use). In
+the env file the user database is `AUTH_POSTGRES_URL`, which
+`sync-config.sh` sends as this Worker's `POSTGRES_URL` secret; the env
+file's own `POSTGRES_URL` is synced only with `--database`.
 
 ## Config
 

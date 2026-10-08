@@ -115,7 +115,7 @@ printed. It uses postgres.js from `worker/node_modules`, so run
 
 `AUTH_POSTGRES_URL` is the user database, shared by the Worker and chat's
 sign-in. chat's own data is in a separate database (`setup-neon-chat.mjs`
-below), which chat reads as `POSTGRES_URL`.
+below), `CHAT_POSTGRES_URL`.
 
 ## `setup-neon-chat.mjs`
 
@@ -141,10 +141,13 @@ triggers that check `user_id` against it, so chat accepts any `user_id`.
 | Env file | Database | chat reads it as |
 |---|---|---|
 | `AUTH_POSTGRES_URL` | Neon project `cloudroot`: users, sessions, accounts (also the Worker's `POSTGRES_URL` secret) | `AUTH_POSTGRES_URL` |
-| `CHAT_POSTGRES_URL` | Neon project `chat`: chats, messages, documents, settings, logs | `POSTGRES_URL` |
+| `CHAT_POSTGRES_URL` | Neon project `chat`: chats, messages, documents, settings, logs | `CHAT_POSTGRES_URL` (or `POSTGRES_URL`) |
 
-Locally, set `POSTGRES_URL` to the `CHAT_POSTGRES_URL` value. On Vercel,
-`vercel-env.mjs` sets both.
+`CHAT_POSTGRES_URL` is duplicated as `POSTGRES_URL` on Vercel, the
+standard name Vercel's Postgres integrations use; chat reads
+`CHAT_POSTGRES_URL` first and falls back to `POSTGRES_URL`. Locally chat reads
+`CHAT_POSTGRES_URL` from the env file, so nothing else is needed. On Vercel,
+`vercel-env.mjs` sets all three.
 
 ## `vercel-env.mjs`
 
@@ -152,15 +155,16 @@ Sets environment variables on chat's Vercel projects from your env file,
 through Vercel's REST API, then redeploys production, since Vercel doesn't
 rebuild when env vars change. Values are never printed.
 
-By default it sets chat's two databases: `POSTGRES_URL` from
-`CHAT_POSTGRES_URL` (chat's data) and `AUTH_POSTGRES_URL` (the user
-database it shares with the Worker). `--config` adds other
+By default it sets chat's two databases: `CHAT_POSTGRES_URL` (chat's
+data), duplicated as `POSTGRES_URL`, the standard name Vercel's Postgres
+integrations use, and `AUTH_POSTGRES_URL` (the user database it shares with
+the Worker). `--config` adds other
 vars from a JSON file, e.g. the social sign-in keys in
 `chat/scripts/vercel-env.config.json`.
 
 ```bash
 node automation/vercel-env.mjs --list                    # projects the token can see
-node automation/vercel-env.mjs vercel-root modelearth    # set both URLs, redeploy, check db-status
+node automation/vercel-env.mjs vercel-root modelearth    # set the database URLs, redeploy, check db-status
 node automation/vercel-env.mjs modelearth --config chat/scripts/vercel-env.config.json
 node automation/vercel-env.mjs modelearth --no-deploy    # set only; next deployment picks it up
 ```

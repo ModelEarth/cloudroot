@@ -10,9 +10,10 @@
 //      over the direct connection, then chat's db:verify. Safe to run again.
 //
 // The sign-in database is separate: AUTH_POSTGRES_URL, from setup-neon.mjs.
-// chat reads POSTGRES_URL for its data and AUTH_POSTGRES_URL for sign-in;
-// vercel-env.mjs sets both on Vercel from CHAT_POSTGRES_URL and
-// AUTH_POSTGRES_URL. Locally, set POSTGRES_URL to the CHAT_POSTGRES_URL value.
+// chat reads CHAT_POSTGRES_URL (or POSTGRES_URL) for its data and
+// AUTH_POSTGRES_URL for sign-in. vercel-env.mjs sets them on Vercel, where
+// CHAT_POSTGRES_URL is duplicated as POSTGRES_URL, the standard name Vercel's
+// Postgres integrations use.
 //
 // Needs NEON_API_KEY in the env file (see automation/README.md), and chat's
 // dependencies installed (cd chat && pnpm install). When CHAT_POSTGRES_URL is
@@ -40,7 +41,8 @@ const ENV_FILE = resolveEnvFile(envIndex >= 0 ? args[envIndex + 1] : "");
 function runChatScript(script, url, pattern) {
   const result = spawnSync("npx", ["tsx", script], {
     cwd: CHAT_DIR,
-    env: { ...process.env, POSTGRES_URL: url, MIGRATION_TARGET: "" },
+    // Both names, so the direct URL wins over the env file's pooled one.
+    env: { ...process.env, CHAT_POSTGRES_URL: url, POSTGRES_URL: url, MIGRATION_TARGET: "" },
     encoding: "utf8",
   });
   const output = `${result.stdout}\n${result.stderr}`.replaceAll(url, "<url>");
@@ -87,4 +89,4 @@ if (!runChatScript("lib/db/migrate.ts", direct, /Running migrations|All migratio
 console.log("  run   chat's db:verify (lib/db/verify-migration.ts)");
 if (!runChatScript("lib/db/verify-migration.ts", direct, /PASSED|FAILED|❌/)) fail("chat's db:verify failed.");
 
-console.log("\nNext: node automation/vercel-env.mjs <project> sets POSTGRES_URL and AUTH_POSTGRES_URL on Vercel.");
+console.log("\nNext: node automation/vercel-env.mjs <project> sets CHAT_POSTGRES_URL, POSTGRES_URL and AUTH_POSTGRES_URL on Vercel.");
