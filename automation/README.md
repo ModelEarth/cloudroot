@@ -11,9 +11,11 @@ repo's GitHub Actions config, via the GitHub CLI:
   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 - the sign-in values: `BETTER_AUTH_SECRET`, `BROWSER_ENCRYPTION_PRIVATE_KEY`,
   and each social provider's `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET`
-- `POSTGRES_URL`, only when you add `--database` — the env file's
-  `POSTGRES_URL` may be the database chat uses, which the Worker shouldn't
-  share (see [worker/README.md](../worker/README.md#database))
+- the Worker's database: `AUTH_POSTGRES_URL` (written by
+  [`setup-neon.mjs`](#setup-neonmjs)), stored as the `POSTGRES_URL` secret.
+  With `--database`, the env file's `POSTGRES_URL` is sent instead; that's
+  usually chat's database, which the Worker shouldn't share (see
+  [worker/README.md](../worker/README.md#database))
 
 GitHub reserves the `GITHUB_` prefix for secret names, so the GitHub OAuth
 app's `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` are stored as
@@ -43,6 +45,47 @@ is usable by agents working in adjacent repos on different local ports
 `../CloudRoot/automation/sync-config.sh`, instead of each repo needing its
 own duplicate copy. See the comment at the top of the script itself for the
 same note.
+
+## `setup-neon.mjs`
+
+Sets up the Worker's sign-in database, the steps in
+[auth/README.md](../auth/README.md#database):
+
+1. Creates a Neon project named `cloudroot` through the Neon API, or finds
+   it if it already exists.
+2. Runs `auth/db/0001_create_better_auth_tables.sql` and
+   `auth/db/0002_enable_pgcrypto.sql` (safe to repeat), then checks that the
+   four tables exist and pgcrypto's bcrypt works.
+3. Saves the pooled connection string in your env file as
+   `AUTH_POSTGRES_URL`, sets the `POSTGRES_URL` secret on GitHub, and starts
+   the "Deploy Worker" workflow.
+
+```bash
+node automation/setup-neon.mjs                       # env file from paths.yaml, repo from git remote
+node automation/setup-neon.mjs paths.yaml owner/CloudRoot
+node automation/setup-neon.mjs --no-github           # database only
+node automation/setup-neon.mjs --no-deploy           # set the secret, don't redeploy
+```
+
+It needs `NEON_API_KEY` in the env file. Neon only creates API keys in its
+dashboard, like Cloudflare's tokens: console.neon.tech → **Account settings
+→ API keys → Create new API key**, then paste it after `NEON_API_KEY=`.
+When the key belongs to exactly one organization, the script finds
+`NEON_ORG_ID` and saves it; with several, it lists them so you can pick one.
+Optional: `NEON_PROJECT_NAME` (default `cloudroot`) and `NEON_REGION_ID`
+(default `aws-us-east-2`).
+
+When `AUTH_POSTGRES_URL` is already set, the Neon API isn't called, so the
+same command runs the migrations against an existing database (Neon,
+Supabase or other Postgres) and syncs it. The connection string is never
+printed. It uses postgres.js from `worker/node_modules`, so run
+`npm install` in `worker/` first, plus `gh` for the GitHub steps.
+
+The Worker's database is kept as `AUTH_POSTGRES_URL`, not `POSTGRES_URL`,
+because chat reads `POSTGRES_URL` from the same env file, and the two
+shouldn't share a database until chat's matching password hashing is
+deployed (see [worker/README.md](../worker/README.md#database)). After
+that, both keys can hold the same Neon URL.
 
 ## GitHub Actions config
 
@@ -119,7 +162,7 @@ its real path instead:
 ```bash
 ./sync-config.sh /path/to/cloud.env ModelEarth/CloudRoot
 ./sync-config.sh /path/to/cloud.env owner/other-repo   # for another repo
-./sync-config.sh paths.yaml ModelEarth/CloudRoot --database   # also POSTGRES_URL
+./sync-config.sh paths.yaml ModelEarth/CloudRoot --database   # POSTGRES_URL, not AUTH_POSTGRES_URL
 ```
 
 It requires the [GitHub CLI](https://cli.github.com/) (`gh`) installed and

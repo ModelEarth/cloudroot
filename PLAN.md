@@ -86,10 +86,11 @@ vanilla sign-in widget at `/auth/js/`.
   encrypted cookie: social sign-in works, email/password is off.
 
 Remaining (needs accounts and credentials, not code):
-- [ ] Create the Neon database, run `auth/db/0001_*.sql` and `0002_*.sql`,
-      and set `POSTGRES_URL` (`sync-config.sh ... --database`). Don't use
-      chat's Supabase database: chat's scrypt can't verify the Worker's bcrypt
-      hashes (see `worker/README.md`, "Database").
+- [ ] Add `NEON_API_KEY` to the env file and run
+      `node automation/setup-neon.mjs`: it creates the Neon project, runs
+      `auth/db/0001_*.sql` and `0002_*.sql`, sets the `POSTGRES_URL` secret
+      and redeploys. Keep it apart from chat's database until chat's matching
+      bcrypt hashing is deployed (see `worker/README.md`, "Database").
 - [ ] Register OAuth apps with callback
       `https://cloud.model.earth/api/auth/callback/<provider>`, and add their
       client id and secret to the env file (the GitHub app's pair syncs as

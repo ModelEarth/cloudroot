@@ -89,21 +89,25 @@ bcrypt reads only the first 72 bytes of a password.
   (port 6543); the direct `db.<project>.supabase.co` host is IPv6-only on
   newer projects.
 
-Setup, once per database:
+Setup, once per database: `node automation/setup-neon.mjs` (see
+[automation/README.md](../automation/README.md#setup-neonmjs)) does all
+three steps. By hand:
 
 1. Create the database (Neon: a new project; copy its connection string).
 2. Run `auth/db/0001_create_better_auth_tables.sql`, then
    `auth/db/0002_enable_pgcrypto.sql`.
-3. Set `POSTGRES_URL` in GitHub secrets, either from your env file with
-   `./automation/sync-config.sh paths.yaml ModelEarth/CloudRoot --database`
-   or with `gh secret set POSTGRES_URL`, then redeploy.
+3. Put the connection string in your env file as `AUTH_POSTGRES_URL` and run
+   `./automation/sync-config.sh`, which stores it as the `POSTGRES_URL`
+   secret (or use `gh secret set POSTGRES_URL`), then redeploy.
 
-**Don't point the Worker at chat's current database.** The Worker stores new
-passwords as bcrypt, which chat's Node BetterAuth (scrypt) can't verify, so
-anyone who signs up through the Worker couldn't sign in to chat. Share one
-database only once chat uses the same hashing (`auth/PLAN.md`, Neon
-migration). This is why `sync-config.sh` syncs `POSTGRES_URL` only with
-`--database`.
+**Don't point the Worker at chat's current database yet.** The Worker stores
+new passwords as bcrypt. chat now hashes the same way
+(`chat/lib/auth/password.ts`), but until that's deployed, a chat deployment
+that can verify only scrypt would reject anyone who signed up through the
+Worker. Once it's live, chat and the Worker can share one Neon database
+(`auth/PLAN.md`, Neon migration). Until then the env file keeps the
+Worker's database as `AUTH_POSTGRES_URL`, apart from chat's `POSTGRES_URL`,
+and `sync-config.sh` syncs `POSTGRES_URL` only with `--database`.
 
 ## Config
 

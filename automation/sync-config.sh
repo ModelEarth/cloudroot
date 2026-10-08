@@ -11,9 +11,11 @@
 # GITHUB_CLIENT_SECRET are stored as GH_CLIENT_ID / GH_CLIENT_SECRET;
 # .github/workflows/deploy-worker.yml maps them back.
 #
-# POSTGRES_URL is synced only with --database, since the env file's
-# POSTGRES_URL may be a database shared with chat (see worker/README.md,
-# "Database"). Pass --database once it holds the Worker's own database.
+# The Worker's database is AUTH_POSTGRES_URL in the env file (written by
+# setup-neon.mjs), synced as the POSTGRES_URL secret. The env file's own
+# POSTGRES_URL is chat's database, which the Worker shouldn't share (see
+# worker/README.md, "Database"), so it's synced only with --database, and
+# then takes the place of AUTH_POSTGRES_URL.
 #
 # Lives here in CloudRoot/automation/, not inside any one repo's worker/
 # folder: without moving it, CloudRoot/automation is usable by agents working
@@ -125,7 +127,7 @@ KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_I
   GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
   MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET LINKEDIN_CLIENT_ID LINKEDIN_CLIENT_SECRET
   DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET)
-if [[ -n "$SYNC_DATABASE" ]]; then KEYS+=(POSTGRES_URL); fi
+if [[ -n "$SYNC_DATABASE" ]]; then KEYS+=(POSTGRES_URL); else KEYS+=(AUTH_POSTGRES_URL); fi
 
 CREATED_FROM_TEMPLATE=""
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -311,6 +313,7 @@ for key in "${KEYS[@]}"; do
 
   secret_name="$key"
   if [[ "$key" == GITHUB_* ]]; then secret_name="GH_${key#GITHUB_}"; fi
+  if [[ "$key" == AUTH_POSTGRES_URL ]]; then secret_name="POSTGRES_URL"; fi
   printf '%s' "$value" | gh secret set "$secret_name" --repo "$REPO" >/dev/null
   echo "  set   $secret_name"
 
