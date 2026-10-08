@@ -40,10 +40,18 @@ is needed.
 | `GET /api/auth/configured-providers`, `/api/auth/db-status` | Which social providers are set up; database status | `src/auth/` |
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
 | `GET /api/sanity-status`, `/sanity/*` | Proxy to the hosted Sanity site at `SANITY_SITE_URL` | `src/sanity.js` |
+| `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
 
 `/api/server-keys`, `/api/public-key`, `/api/validate-key` and the Sanity
 proxy mirror the routes in `chat/server.mjs`, so the `keys` widget and
-`requests/engine` work unchanged. `/api/save-file` (localsite's Markdown
+`requests/engine` work unchanged. The Arts Engine routes are a JavaScript
+port of `requests/engine/rust-api`, kept in the `requests` submodule beside
+it; locally the engine page still uses the Rust backend on port 8082.
+Unlike rust-api, they don't use the Worker's own keys on their own: each
+request carries the visitor's key. The exception is Gemini: typing the
+`ARTS_ENGINE_PASSPHRASE` secret (12+ characters) as the Gemini key uses the
+Worker's `GEMINI_API_KEY` instead. Both are synced from the env file by
+`automation/sync-config.sh`. `/api/save-file` (localsite's Markdown
 editor) writes to local disk, so it stays local-only; on Cloudflare it
 returns 404 and the editor falls back to copying to the clipboard.
 

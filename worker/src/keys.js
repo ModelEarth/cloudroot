@@ -8,11 +8,13 @@
 //      Public half of BROWSER_ENCRYPTION_PRIVATE_KEY as a JWK, used by the
 //      widget to encrypt a browser-held key for the server. 404 when unset.
 // POST /api/validate-key  { provider, key } -> { valid: true | false | null }
-//      Checks a key against the provider's API without storing it.
+//      Checks a key against the provider's API without storing it. The Arts
+//      Engine's passphrase, typed as the Gemini key, counts as valid.
 
 import { createPrivateKey, createPublicKey } from "node:crypto";
 import { getConfiguredProviders } from "./chat.js";
 import { configuredValue, json } from "./http.js";
+import { checkEnginePassphrase } from "../../requests/engine/worker/engine.js";
 
 export function handleKeyStatus(env) {
   return json(getConfiguredProviders(env));
@@ -29,11 +31,14 @@ export function handlePublicKey(env) {
   }
 }
 
-export async function handleValidateKey(request) {
+export async function handleValidateKey(request, env) {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
   try {
     const { provider, key } = (await request.json()) || {};
     if (!provider || !key) return json({ error: "Missing provider or key" }, 400);
+    const passphrase = await checkEnginePassphrase(env, provider, key);
+    if (passphrase === "match") return json({ valid: true });
+    if (passphrase === "invalid") return json({ valid: false, error: "Passkey contains invalid phrase." });
 
     const valid = await validateProviderKey(provider, key);
     if (valid === "unsupported") return json({ valid: null, error: "Unsupported provider" });

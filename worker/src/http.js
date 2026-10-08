@@ -19,7 +19,8 @@ export function corsHeaders(request, env) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    // X-Provider-*: the visitor's own LLM key, sent by the Arts Engine page.
+    "Access-Control-Allow-Headers": "Content-Type, X-Provider-Name, X-Provider-Key, X-Provider-URL",
     Vary: "Origin",
   };
 }

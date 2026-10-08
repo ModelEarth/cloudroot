@@ -4,7 +4,8 @@
 # (ANTHROPIC_API_KEY, OPENAI_API_KEY, CLOUDFLARE_API_TOKEN,
 # CLOUDFLARE_ACCOUNT_ID) plus the sign-in values (BETTER_AUTH_SECRET,
 # BROWSER_ENCRYPTION_PRIVATE_KEY and each social provider's
-# <PROVIDER>_CLIENT_ID / _SECRET). Values missing from the env file, or still
+# <PROVIDER>_CLIENT_ID / _SECRET), and the Arts Engine's GEMINI_API_KEY and
+# ARTS_ENGINE_PASSPHRASE. Values missing from the env file, or still
 # template placeholders, are skipped.
 #
 # GitHub reserves the GITHUB_ prefix for secret names, so GITHUB_CLIENT_ID /
@@ -126,7 +127,8 @@ KEYS=(ANTHROPIC_API_KEY OPENAI_API_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_I
   BETTER_AUTH_SECRET BROWSER_ENCRYPTION_PRIVATE_KEY
   GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GITHUB_CLIENT_ID GITHUB_CLIENT_SECRET
   MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET LINKEDIN_CLIENT_ID LINKEDIN_CLIENT_SECRET
-  DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET)
+  DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET
+  GEMINI_API_KEY ARTS_ENGINE_PASSPHRASE)
 if [[ -n "$SYNC_DATABASE" ]]; then KEYS+=(POSTGRES_URL); else KEYS+=(AUTH_POSTGRES_URL); fi
 
 CREATED_FROM_TEMPLATE=""
@@ -260,11 +262,14 @@ save_env_value() {
 # exact hardcoded string per key - the exact wording of ModelEarth/docker's
 # .env.example has changed before, and an exact-string check silently stops
 # catching a placeholder the moment the wording changes, letting it sync as
-# if it were a real secret. Matches anything starting "your-"/"your_" (e.g.
-# "your-github-client-id"), plus the CHANGE_ME... style used for
-# BETTER_AUTH_SECRET.
+# if it were a real secret. The same rule as the Worker's PLACEHOLDER check
+# (worker/src/http.js, requests/engine/worker/engine.js), ignoring case:
+# values starting "your-"/"your_", "sk-your", "<", "example", "placeholder",
+# "xxx", "changeme"/"change_me" or "todo"/"dummy", or containing "_here".
 is_placeholder_value() {
-  [[ "$1" =~ ^[Yy]our[-_] || "$1" =~ ^(CHANGE_ME|changeme) ]]
+  local lowered re='^(your[-_]|sk-your|<|example|placeholder|xxx|changeme|change_me|todo|dummy)'
+  lowered=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+  [[ "$lowered" =~ $re || "$1" == *_here* ]]
 }
 
 echo "Syncing config from $ENV_FILE into $REPO ..."
@@ -277,6 +282,14 @@ for key in "${KEYS[@]}"; do
   # match), and under pipefail that would otherwise kill the whole script
   # right here via set -e, before the "skip" handling below ever runs.
   value=$( { grep -E "^${key}=" "$ENV_FILE" || true; } | tail -n1 | cut -d '=' -f2- | sed -E -e 's/^"//' -e 's/"$//' -e 's/[[:space:]]+#.*$//')
+
+  # A passphrase someone chose (not the template's) that the Worker would
+  # treat as a placeholder, so it would never work.
+  if [[ "$key" == "ARTS_ENGINE_PASSPHRASE" && -n "$value" && "$value" != "your-arts-engine-passphrase" ]] \
+    && is_placeholder_value "$value"; then
+    echo "  skip  $key: Passkey contains invalid phrase."
+    continue
+  fi
 
   if [[ -n "$value" ]] && is_placeholder_value "$value"; then
     echo "  skip  $key (placeholder, not a real value)"

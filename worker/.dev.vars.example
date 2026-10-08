@@ -8,6 +8,7 @@ CLAUDE_CODE_OAUTH_TOKEN=your-subscription-token # Run: claude setup-token
 OPENAI_API_KEY=sk-xxxxxxxx # Get key at platform.openai.com
 XAI_API_KEY=your-xai-api-key # Get key at console.x.ai
 XAI_API_URL=https://api.x.ai/v1 # X.ai API base URL (default: https://api.x.ai/v1)
+ARTS_ENGINE_PASSPHRASE=your-arts-engine-passphrase # Typing this as the Gemini key in the Arts Engine uses GEMINI_API_KEY above. 12+ characters; a shorter one is ignored.
 # Sign-in (see README.md, "Sign-in")
 BETTER_AUTH_SECRET=CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32
 # POSTGRES_URL=postgresql://user:password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require
