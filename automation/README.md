@@ -121,9 +121,14 @@ node automation/vercel-env.mjs modelearth --no-deploy    # set only; next deploy
 
 It needs `VERCEL_API_TOKEN` in the env file: create one at
 https://vercel.com/account/tokens, scoped to the team that owns chat's
-projects, with an expiry. The script finds each project in your personal
-account or any team the token reaches; `VERCEL_TEAM_ID` narrows that to one
-team. `set-root-directory.js` at the repo root reads the same token name,
+projects. The script finds each project in your personal account or any
+team the token reaches; `VERCEL_TEAM_ID` narrows that to one team.
+
+The token can read and change every project in that team, so delete it
+(Account Settings → Tokens) when you no longer need it, or straight away if
+the env file may have been shared. An expiry date is optional: it retires a
+forgotten or leaked token on its own, but the script then stops with a 401
+until you make a new one. `set-root-directory.js` at the repo root reads the same token name,
 from `.env.local`.
 
 ## GitHub Actions config

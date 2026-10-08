@@ -48,7 +48,7 @@ const ENV_FILE = resolveEnvFile(envArg);
 
 const token = readEnv(ENV_FILE, "VERCEL_API_TOKEN") || readEnv(ENV_FILE, "VERCEL_TOKEN");
 if (!token) {
-  fail(`VERCEL_API_TOKEN isn't set in ${ENV_FILE}. Create a token at https://vercel.com/account/tokens (scope: the team that owns chat's projects; set an expiry), paste it after VERCEL_API_TOKEN= in the env file, and re-run.`);
+  fail(`VERCEL_API_TOKEN isn't set in ${ENV_FILE}. Create a token at https://vercel.com/account/tokens (scope: the team that owns chat's projects), paste it after VERCEL_API_TOKEN= in the env file, and re-run.`);
 }
 const fixedTeamId = readEnv(ENV_FILE, "VERCEL_TEAM_ID");
 
