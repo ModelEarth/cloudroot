@@ -9,7 +9,7 @@
 //      pushes it to GitHub as the POSTGRES_URL secret, and starts the
 //      "Deploy Worker" workflow so the Worker picks it up.
 //
-// Needs NEON_API_KEY in the env file: console.neon.tech → Account settings →
+// Needs NEON_API_KEY in the env file: console.neon.tech → Settings → Personal
 // API keys. Like the Cloudflare token, Neon only creates it in its dashboard.
 // When AUTH_POSTGRES_URL is already set, the Neon API isn't used, so this
 // also works for an existing database (Neon, Supabase or other Postgres).
@@ -19,7 +19,8 @@
 // worker/README.md, "Database"). After that both can hold the same URL.
 //
 // Optional env file values: NEON_PROJECT_NAME (default "cloudroot"),
-// NEON_REGION_ID (default "aws-us-east-2"), NEON_ORG_ID (found and saved
+// NEON_REGION_ID (default "aws-us-east-1", Virginia: next to Vercel's default
+// iad1 functions and commons' Neon projects), NEON_ORG_ID (found and saved
 // automatically when the API key reaches exactly one organization).
 //
 // Usage: node automation/setup-neon.mjs [env-file|paths.yaml] [owner/repo]
@@ -193,11 +194,21 @@ async function loadPostgres() {
   return (await import(pathToFileURL(entry).href)).default;
 }
 
+// Neon's pooled host is the direct host with -pooler after the endpoint id
+// (as in commons/support/cal/vercel-env.sh). Migrations use the direct one.
+function directUrl(url) {
+  const connection = new URL(url);
+  if (connection.hostname.endsWith(".neon.tech")) {
+    connection.hostname = connection.hostname.replace(/^(ep-[a-z0-9-]+?)-pooler\./, "$1.");
+  }
+  // postgres.js would send channel_binding to the server as a setting.
+  connection.searchParams.delete("channel_binding");
+  return connection;
+}
+
 async function runMigrations(url) {
   const postgres = await loadPostgres();
-  // postgres.js would send channel_binding to the server as a setting.
-  const connection = new URL(url);
-  connection.searchParams.delete("channel_binding");
+  const connection = directUrl(url);
   const sql = postgres(connection.href, { max: 1, prepare: false, connect_timeout: 15, onnotice: () => {} });
   try {
     // A new Neon compute can take a few seconds to accept connections.
@@ -266,10 +277,10 @@ if (url) {
   console.log("  using AUTH_POSTGRES_URL from the env file (Neon API not needed)");
 } else {
   if (!apiKey) {
-    fail(`NEON_API_KEY isn't set in ${ENV_FILE}. Create one at console.neon.tech → Account settings → API keys, paste it after NEON_API_KEY= in the env file, and re-run.`);
+    fail(`NEON_API_KEY isn't set in ${ENV_FILE}. Create one at console.neon.tech → Settings → Personal API keys, paste it after NEON_API_KEY= in the env file, and re-run.`);
   }
   try {
-    const projectId = await findOrCreateProject(readEnv("NEON_PROJECT_NAME") || "cloudroot", readEnv("NEON_REGION_ID") || "aws-us-east-2");
+    const projectId = await findOrCreateProject(readEnv("NEON_PROJECT_NAME") || "cloudroot", readEnv("NEON_REGION_ID") || "aws-us-east-1");
     url = await connectionUri(projectId);
   } catch (error) {
     fail(error.status === 401 ? `${error.message} | Check NEON_API_KEY in ${ENV_FILE}.` : error.message);

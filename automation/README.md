@@ -54,10 +54,11 @@ Sets up the Worker's sign-in database, the steps in
 1. Creates a Neon project named `cloudroot` through the Neon API, or finds
    it if it already exists.
 2. Runs `auth/db/0001_create_better_auth_tables.sql` and
-   `auth/db/0002_enable_pgcrypto.sql` (safe to repeat), then checks that the
+   `auth/db/0002_enable_pgcrypto.sql` over the direct connection (safe to
+   repeat), then checks that the
    four tables exist and pgcrypto's bcrypt works.
-3. Saves the pooled connection string in your env file as
-   `AUTH_POSTGRES_URL`, sets the `POSTGRES_URL` secret on GitHub, and starts
+3. Saves the pooled connection string (`-pooler` in the hostname) in your
+   env file as `AUTH_POSTGRES_URL`, sets the `POSTGRES_URL` secret on GitHub, and starts
    the "Deploy Worker" workflow.
 
 ```bash
@@ -68,12 +69,18 @@ node automation/setup-neon.mjs --no-deploy           # set the secret, don't red
 ```
 
 It needs `NEON_API_KEY` in the env file. Neon only creates API keys in its
-dashboard, like Cloudflare's tokens: console.neon.tech → **Account settings
-→ API keys → Create new API key**, then paste it after `NEON_API_KEY=`.
-When the key belongs to exactly one organization, the script finds
-`NEON_ORG_ID` and saves it; with several, it lists them so you can pick one.
+dashboard, like Cloudflare's tokens: console.neon.tech → **Settings →
+Personal API keys → Create new API key**, then paste it after
+`NEON_API_KEY=`. Neon shows the key only once.
+An organization API key (switch to the organization, then **Settings →
+API keys**; org admins only) works too. It belongs to the organization, so
+members can share it and it keeps working when someone leaves. With a
+personal key in exactly one organization, the script finds `NEON_ORG_ID`
+and saves it; with several, it lists them so you can pick one.
 Optional: `NEON_PROJECT_NAME` (default `cloudroot`) and `NEON_REGION_ID`
-(default `aws-us-east-2`).
+(default `aws-us-east-1`, Virginia, next to Vercel's default `iad1`
+functions and to commons' Neon projects). The region is fixed once the
+project exists.
 
 When `AUTH_POSTGRES_URL` is already set, the Neon API isn't called, so the
 same command runs the migrations against an existing database (Neon,
