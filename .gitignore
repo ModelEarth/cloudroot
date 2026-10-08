@@ -1,9 +1,18 @@
 .DS_Store
 .idea
-.env
 .env.local
-env
 bin
 paths.yaml
 docker
 safe
+
+# Auth keys and secrets
+*.key
+*.pem
+env/*
+.env
+.env.*
+!.env.example
+*.env
+env
+.envrc
