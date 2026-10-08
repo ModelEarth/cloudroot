@@ -67,7 +67,7 @@ Moved into `worker/src/keys.js` and `worker/src/sanity.js`:
 - `/api/sanity-status` and the `/sanity/*` proxy, forwarding to the hosted
   Sanity site at `SANITY_SITE_URL` (the Worker can't run the site itself).
 
-### 6. Sign-in on the Worker ✅ (database pending)
+### 6. Sign-in on the Worker ✅
 `worker/src/auth/` runs BetterAuth, replacing chat's Next.js routes for this
 site (`/api/auth/*`, `/api/oauth/*`, `configured-providers`, `db-status`).
 The `auth` submodule is a static export served at `/auth/`, and carries the
@@ -82,21 +82,20 @@ vanilla sign-in widget at `/auth/js/`.
   password, waits, and gets the result in the same request, with no
   callback. Legacy scrypt hashes from chat are checked once and rewritten as
   bcrypt.
-- **Stateless until Neon exists.** With no `POSTGRES_URL`, sessions live in an
-  encrypted cookie: social sign-in works, email/password is off.
+- **Database.** The Neon project `cloudroot` (`aws-us-east-1`), created by
+  `automation/setup-neon.mjs` on 8 October 2026. Without `POSTGRES_URL`,
+  sessions would live in an encrypted cookie and email/password would be off.
 
-Remaining (needs accounts and credentials, not code):
-- [ ] Add `NEON_API_KEY` to the env file and run
-      `node automation/setup-neon.mjs`: it creates the Neon project, runs
-      `auth/db/0001_*.sql` and `0002_*.sql`, sets the `POSTGRES_URL` secret
-      and redeploys. Keep it apart from chat's database until chat's matching
-      bcrypt hashing is deployed (see `worker/README.md`, "Database").
+Remaining:
+- [x] Neon database created and set as `POSTGRES_URL`
+      (`node automation/setup-neon.mjs`). Test an email/password sign-up.
 - [ ] Register OAuth apps with callback
       `https://cloud.model.earth/api/auth/callback/<provider>`, and add their
       client id and secret to the env file (the GitHub app's pair syncs as
       `GH_CLIENT_ID` / `GH_CLIENT_SECRET`).
-- [ ] Copy existing users from Supabase to Neon when chat moves to Neon
-      (`auth/PLAN.md`, phase 2).
+- [ ] Point chat at the same Neon database, after porting its
+      Supabase-specific migrations (`auth/PLAN.md`, open items 3-4). Users
+      aren't copied from Supabase.
 
 ## End state
 

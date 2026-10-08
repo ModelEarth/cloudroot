@@ -72,10 +72,10 @@ passwords are hashed inside Postgres with pgcrypto's bcrypt
 (`crypt(password, gen_salt('bf', 10))`): the Worker sends the password, waits
 for the result, and continues in the same request (`src/auth/password.js`).
 
-Accounts created by chat's Node BetterAuth hold scrypt hashes. The Worker
-checks one of those once with `node:crypto`, then rewrites it as bcrypt. That
-one check is CPU-heavy, and on the free plan it may exceed the limit; if it
-does, that user resets their password, or the check runs on a paid plan.
+Older chat accounts held BetterAuth's default scrypt hashes. The Worker still
+accepts one (checked once with `node:crypto`, then rewritten as bcrypt), but
+users aren't copied from Supabase, so the Neon database shouldn't hold any.
+That check is CPU-heavy and could exceed the free plan's limit.
 
 bcrypt reads only the first 72 bytes of a password.
 
@@ -100,14 +100,13 @@ three steps. By hand:
    `./automation/sync-config.sh`, which stores it as the `POSTGRES_URL`
    secret (or use `gh secret set POSTGRES_URL`), then redeploy.
 
-**Don't point the Worker at chat's current database yet.** The Worker stores
-new passwords as bcrypt. chat now hashes the same way
-(`chat/lib/auth/password.ts`), but until that's deployed, a chat deployment
-that can verify only scrypt would reject anyone who signed up through the
-Worker. Once it's live, chat and the Worker can share one Neon database
-(`auth/PLAN.md`, Neon migration). Until then the env file keeps the
-Worker's database as `AUTH_POSTGRES_URL`, apart from chat's `POSTGRES_URL`,
-and `sync-config.sh` syncs `POSTGRES_URL` only with `--database`.
+**The Worker's database is the Neon project `cloudroot`.** chat hashes
+passwords the same way (`chat/lib/auth/password.ts`), so chat should move to
+this database rather than the Worker to chat's Supabase one (`auth/PLAN.md`,
+open items 3-4). Users aren't copied from Supabase. Until chat moves, the env
+file keeps the Worker's database as `AUTH_POSTGRES_URL`, apart from chat's
+`POSTGRES_URL`, and `sync-config.sh` syncs `POSTGRES_URL` only with
+`--database`.
 
 ## Config
 
