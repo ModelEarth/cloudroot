@@ -4,9 +4,12 @@
 // effect (Vercel doesn't rebuild when env vars change). Values are never
 // printed.
 //
-// By default it sets POSTGRES_URL from AUTH_POSTGRES_URL: the Neon database
-// the CloudRoot Worker signs in with (setup-neon.mjs), so chat and the Worker
-// share users. --config adds the vars listed in a JSON file such as
+// By default it sets chat's two databases:
+//   POSTGRES_URL       from CHAT_POSTGRES_URL: chat's data (setup-neon-chat.mjs)
+//   AUTH_POSTGRES_URL  from AUTH_POSTGRES_URL: the sign-in database the
+//                      CloudRoot Worker uses (setup-neon.mjs), so chat and the
+//                      Worker share users
+// --config adds the vars listed in a JSON file such as
 // chat/scripts/vercel-env.config.json (the social sign-in keys):
 //   { "environment": "production", "vars": [{ "source": "X", "target": "X" }] }
 //
@@ -59,7 +62,10 @@ if (!projectNames.length) {
 
 // target (on Vercel) <- source (in the env file), and the environments a
 // new variable gets.
-const vars = [{ source: "AUTH_POSTGRES_URL", target: "POSTGRES_URL", environments: NEW_VAR_TARGETS }];
+const vars = [
+  { source: "CHAT_POSTGRES_URL", target: "POSTGRES_URL", environments: NEW_VAR_TARGETS },
+  { source: "AUTH_POSTGRES_URL", target: "AUTH_POSTGRES_URL", environments: NEW_VAR_TARGETS },
+];
 if (configArg) {
   const config = JSON.parse(readFileSync(resolve(configArg), "utf8"));
   const environments = config.environment ? [config.environment] : NEW_VAR_TARGETS;

@@ -93,9 +93,10 @@ Remaining:
       `https://cloud.model.earth/api/auth/callback/<provider>`, and add their
       client id and secret to the env file (the GitHub app's pair syncs as
       `GH_CLIENT_ID` / `GH_CLIENT_SECRET`).
-- [ ] Point chat at the same Neon database and run its migrations there;
-      the Neon versions are in `chat/lib/db/migrations/neon/`
-      (`auth/PLAN.md`, open item 4). Users aren't copied from Supabase.
+- [x] chat's data in its own Neon project, `chat`
+      (`automation/setup-neon-chat.mjs`); the user database stays `cloudroot`.
+- [ ] Set chat's `POSTGRES_URL` and `AUTH_POSTGRES_URL` on Vercel
+      (`automation/vercel-env.mjs`, `auth/PLAN.md`, open item 4).
 
 ## End state
 

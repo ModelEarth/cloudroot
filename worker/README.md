@@ -74,8 +74,8 @@ for the result, and continues in the same request (`src/auth/password.js`).
 
 Older chat accounts held BetterAuth's default scrypt hashes. The Worker still
 accepts one (checked once with `node:crypto`, then rewritten as bcrypt), but
-users aren't copied from Supabase, so the Neon database shouldn't hold any.
-That check is CPU-heavy and could exceed the free plan's limit.
+the Neon database started empty, so it shouldn't hold any. That check is
+CPU-heavy and could exceed the free plan's limit.
 
 bcrypt reads only the first 72 bytes of a password.
 
@@ -100,13 +100,14 @@ three steps. By hand:
    `./automation/sync-config.sh`, which stores it as the `POSTGRES_URL`
    secret (or use `gh secret set POSTGRES_URL`), then redeploy.
 
-**The Worker's database is the Neon project `cloudroot`.** chat hashes
-passwords the same way (`chat/lib/auth/password.ts`), so chat should move to
-this database rather than the Worker to chat's Supabase one (`auth/PLAN.md`,
-open item 4). Users aren't copied from Supabase. Until chat moves, the env
-file keeps the Worker's database as `AUTH_POSTGRES_URL`, apart from chat's
-`POSTGRES_URL`, and `sync-config.sh` syncs `POSTGRES_URL` only with
-`--database`.
+**The Worker's database is the Neon project `cloudroot`, the user
+database.** chat signs in against it too, as `AUTH_POSTGRES_URL`, and hashes
+passwords the same way (`chat/lib/auth/password.ts`). chat's own data is in
+a separate Neon project, `chat`, which chat reads as `POSTGRES_URL`
+(`automation/setup-neon-chat.mjs`). In the env file the user database is
+`AUTH_POSTGRES_URL`, which `sync-config.sh` sends as this Worker's
+`POSTGRES_URL` secret; the env file's own `POSTGRES_URL` is chat's, synced
+only with `--database`.
 
 ## Config
 

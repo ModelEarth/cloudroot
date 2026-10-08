@@ -88,11 +88,38 @@ Supabase or other Postgres) and syncs it. The connection string is never
 printed. It uses postgres.js from `worker/node_modules`, so run
 `npm install` in `worker/` first, plus `gh` for the GitHub steps.
 
-The Worker's database is kept as `AUTH_POSTGRES_URL`, not `POSTGRES_URL`,
-because chat reads `POSTGRES_URL` from the same env file, and the two
-shouldn't share a database until chat's matching password hashing is
-deployed (see [worker/README.md](../worker/README.md#database)). After
-that, both keys can hold the same Neon URL.
+`AUTH_POSTGRES_URL` is the user database, shared by the Worker and chat's
+sign-in. chat's own data is in a separate database (`setup-neon-chat.mjs`
+below), which chat reads as `POSTGRES_URL`.
+
+## `setup-neon-chat.mjs`
+
+Sets up chat's data database, a Neon project apart from the user database:
+
+1. Creates the Neon project `chat` (or finds it).
+2. Saves its pooled connection string in the env file as
+   `CHAT_POSTGRES_URL`.
+3. Runs chat's migrations there (their Neon versions,
+   `chat/lib/db/migrate.ts`) over the direct connection, then chat's
+   `db:verify`. Safe to repeat.
+
+```bash
+node automation/setup-neon-chat.mjs
+node automation/setup-neon-chat.mjs --no-migrate   # project and env file only
+```
+
+It needs `NEON_API_KEY` (as above) and chat's dependencies
+(`cd chat && pnpm install`). Optional: `NEON_CHAT_PROJECT_NAME` (default
+`chat`). With the user table in another database, chat's migrations skip the
+triggers that check `user_id` against it, so chat accepts any `user_id`.
+
+| Env file | Database | chat reads it as |
+|---|---|---|
+| `AUTH_POSTGRES_URL` | Neon project `cloudroot`: users, sessions, accounts (also the Worker's `POSTGRES_URL` secret) | `AUTH_POSTGRES_URL` |
+| `CHAT_POSTGRES_URL` | Neon project `chat`: chats, messages, documents, settings, logs | `POSTGRES_URL` |
+
+Locally, set `POSTGRES_URL` to the `CHAT_POSTGRES_URL` value. On Vercel,
+`vercel-env.mjs` sets both.
 
 ## `vercel-env.mjs`
 
@@ -100,14 +127,15 @@ Sets environment variables on chat's Vercel projects from your env file,
 through Vercel's REST API, then redeploys production, since Vercel doesn't
 rebuild when env vars change. Values are never printed.
 
-By default it sets `POSTGRES_URL` from `AUTH_POSTGRES_URL`, so chat uses
-the Worker's Neon database and the two share users. `--config` adds other
+By default it sets chat's two databases: `POSTGRES_URL` from
+`CHAT_POSTGRES_URL` (chat's data) and `AUTH_POSTGRES_URL` (the user
+database it shares with the Worker). `--config` adds other
 vars from a JSON file, e.g. the social sign-in keys in
 `chat/scripts/vercel-env.config.json`.
 
 ```bash
 node automation/vercel-env.mjs --list                    # projects the token can see
-node automation/vercel-env.mjs vercel-root modelearth    # set POSTGRES_URL, redeploy, check db-status
+node automation/vercel-env.mjs vercel-root modelearth    # set both URLs, redeploy, check db-status
 node automation/vercel-env.mjs modelearth --config chat/scripts/vercel-env.config.json
 node automation/vercel-env.mjs modelearth --no-deploy    # set only; next deployment picks it up
 ```
