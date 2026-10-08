@@ -107,11 +107,22 @@ Remaining:
 | Sign-in pages | cloud.model.earth/auth/ | `auth` static export, same workflow |
 | `chat/` (Next.js) | Vercel | Vercel's git integration, unchanged |
 
-## Superseded: chat on Cloudflare via OpenNext
+## Not planned: chat on Cloudflare via OpenNext
 
-The earlier plan deployed `chat/` itself to Cloudflare through OpenNext
-(`deploy-chat-worker.yml`, Hyperdrive for its Postgres driver). It's on
-hold: OpenNext's Cloudflare adapter doesn't support the Node runtime that
-Next.js 16 requires for proxy files (see README.md). Chat's pieces this site
-needs (sign-in and the small APIs) now run in the CloudRoot Worker instead.
-`deploy-chat-worker.yml` only runs when started by hand.
+Chat stays on Vercel. The earlier plan deployed `chat/` itself to Cloudflare
+through OpenNext (`deploy-chat-worker.yml`, which now only runs when started
+by hand). Chat's pieces this site needs (sign-in and the small APIs) run in
+the CloudRoot Worker instead, and the `requests` submodule's Arts Engine
+(`/requests/engine/`) is the LLM interface on cloud.model.earth.
+
+What a test build showed (Oct 2026), in case this is revisited:
+
+- OpenNext's Cloudflare adapter supports Next.js 16 proxy files since 1.20.3
+  (marked experimental). `pnpm run cf:build` in `chat/` builds, and its pages
+  render locally in workerd.
+- The Worker was 8.8 MB gzipped, over the free plan's 3 MB limit. Chat now
+  uses `@googleapis/sheets` instead of `googleapis` and renders Streamdown in
+  the browser only, which brings it to 6.3 MB (and shrinks chat's server
+  bundle on Vercel too); the rest is Next.js and chat's API routes.
+- A Worker has no filesystem, so `/keys/<file>`, the FAQ's Chat Sites list
+  and the repo docs feature would need their files bundled at build time.

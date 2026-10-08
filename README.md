@@ -2,10 +2,14 @@
 
 A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Generates Cloudflare site at [cloud.model.earth](https://cloud.model.earth)
 
-The chat submodule deploys to Vercel directly. [opennext.js](https://opennext.js.org)
-is included for Cloudflare Workers deployment but is not currently in use for
-chat, since its Cloudflare adapter does not support the Node runtime that
-Next.js 16 requires for proxy files.
+The chat submodule deploys to Vercel directly; it isn't converted for
+Cloudflare (see [PLAN.md](PLAN.md)). On cloud.model.earth:
+
+- [Arts Engine](https://cloud.model.earth/requests/engine/): the LLM interface
+  in the `requests` submodule. Generating needs its Rust backend running on
+  your own computer for now.
+- [Account](https://cloud.model.earth/auth/): sign-in, optional.
+- [Keys](https://cloud.model.earth/keys/): LLM keys, kept in your browser.
 
 NodeJS resides in "chat" submodule.
 
