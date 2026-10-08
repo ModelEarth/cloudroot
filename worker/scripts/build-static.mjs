@@ -53,6 +53,13 @@ for (const name of readdirSync(WEBROOT)) {
   copied++;
 }
 
+// automation/ holds local scripts and config, so only its README page is
+// published: index.html renders README.md (and links manual.md) in the browser.
+for (const file of ["index.html", "README.md", "manual.md"]) {
+  const source = join(WEBROOT, "automation", file);
+  if (existsSync(source)) cpSync(source, join(OUT, "automation", file));
+}
+
 const authExport = join(WEBROOT, "auth", "out");
 if (existsSync(authExport)) {
   cpSync(authExport, join(OUT, "auth"), { recursive: true, filter: keep });

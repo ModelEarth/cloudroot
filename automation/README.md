@@ -1,6 +1,31 @@
 # Cloud Automation
 
-[manual.md](manual.md)
+[manual.md](manual.md) | [Social sign-in](#social-sign-in)
+
+## Social sign-in
+
+Social sign-in buttons (Google, GitHub, Microsoft, LinkedIn, Discord,
+Facebook) appear once a provider's `<PROVIDER>_CLIENT_ID` and
+`<PROVIDER>_CLIENT_SECRET` are both set. Until then the sign-in pages offer
+email and password only.
+
+1. Register an OAuth app with each provider. Step-by-step instructions per
+   provider are in chat's
+   [oauth-setup.md](https://github.com/ModelEarth/chat/blob/main/auth/oauth-setup.md).
+   Use these callback URLs:
+   - `https://cloud.model.earth/api/auth/callback/<provider>` (the Worker)
+   - `https://modelearth.vercel.app/api/auth/callback/<provider>` (chat on Vercel)
+   - `http://localhost:3700/api/auth/callback/<provider>` (local)
+2. Add each app's client id and secret to your local env file, e.g.
+   `GOOGLE_CLIENT_ID=` and `GOOGLE_CLIENT_SECRET=`.
+3. Push them where they're used:
+   - The Worker: `./automation/sync-config.sh`, which stores them as GitHub
+     secrets for the deploy workflow (see below). Push to `main` or rerun
+     "Deploy Worker" to apply.
+   - chat on Vercel: `node automation/vercel-env.mjs modelearth --config
+     chat/scripts/vercel-env.config.json`, which sets them and redeploys
+     (see [`vercel-env.mjs`](#vercel-envmjs)).
+   - Locally: restart `node chat/server.mjs`, which reads the env file.
 
 ## `sync-config.sh`
 
