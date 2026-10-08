@@ -94,6 +94,38 @@ shouldn't share a database until chat's matching password hashing is
 deployed (see [worker/README.md](../worker/README.md#database)). After
 that, both keys can hold the same Neon URL.
 
+## `vercel-env.mjs`
+
+Sets environment variables on chat's Vercel projects from your env file,
+through Vercel's REST API, then redeploys production, since Vercel doesn't
+rebuild when env vars change. Values are never printed.
+
+By default it sets `POSTGRES_URL` from `AUTH_POSTGRES_URL`, so chat uses
+the Worker's Neon database and the two share users. `--config` adds other
+vars from a JSON file, e.g. the social sign-in keys in
+`chat/scripts/vercel-env.config.json`.
+
+```bash
+node automation/vercel-env.mjs --list                    # projects the token can see
+node automation/vercel-env.mjs vercel-root modelearth    # set POSTGRES_URL, redeploy, check db-status
+node automation/vercel-env.mjs modelearth --config chat/scripts/vercel-env.config.json
+node automation/vercel-env.mjs modelearth --no-deploy    # set only; next deployment picks it up
+```
+
+- An existing variable keeps its environments and type; only the value
+  changes. A new one is added as encrypted, for Production and Preview (or
+  the config file's `environment`).
+- After the redeploy finishes it checks
+  `https://<production domain>/api/auth/db-status`.
+- Projects can also come from `VERCEL_PROJECTS=name1,name2` in the env file.
+
+It needs `VERCEL_API_TOKEN` in the env file: create one at
+https://vercel.com/account/tokens, scoped to the team that owns chat's
+projects, with an expiry. The script finds each project in your personal
+account or any team the token reaches; `VERCEL_TEAM_ID` narrows that to one
+team. `set-root-directory.js` at the repo root reads the same token name,
+from `.env.local`.
+
 ## GitHub Actions config
 
 GitHub stores these values as encrypted config for a repo's Actions

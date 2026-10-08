@@ -29,74 +29,23 @@
 // The repo defaults to this checkout's git remote. The connection string is
 // never printed.
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { dirname, join, resolve, isAbsolute } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
+import { AUTOMATION_DIR, fail, resolveEnvFile, readEnv as readEnvFrom, saveEnv as saveEnvIn } from "./env-file.mjs";
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(SCRIPT_DIR, "..");
+const ROOT = resolve(AUTOMATION_DIR, "..");
 const NEON_API = "https://console.neon.tech/api/v2";
 const MIGRATIONS = ["0001_create_better_auth_tables.sql", "0002_enable_pgcrypto.sql"];
 
 const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith("--")));
 const positional = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 
-function fail(message) {
-  console.error(`Error: ${message}`);
-  process.exit(1);
-}
-
-// ---- env file -------------------------------------------------------------
-
-function resolveEnvFile() {
-  const arg = positional[0];
-  if (arg && arg !== "paths.yaml") return resolve(arg);
-  const pathsYaml = join(SCRIPT_DIR, "paths.yaml");
-  if (!existsSync(pathsYaml)) {
-    fail("no env file given and no automation/paths.yaml yet. Pass the env file path, or run sync-config.sh once.");
-  }
-  // Same parsing as sync-config.sh's read_env_file_setting.
-  const line = readFileSync(pathsYaml, "utf8").split("\n").filter((l) => l.startsWith("env_file:")).pop();
-  const value = (line || "")
-    .slice("env_file:".length)
-    .replace(/\s#.*$/, "")
-    .trim()
-    .replace(/^"|"$/g, "");
-  if (!value) fail(`no env_file: set in ${pathsYaml}.`);
-  return isAbsolute(value) ? value : resolve(SCRIPT_DIR, value);
-}
-
-const ENV_FILE = resolveEnvFile();
-if (!existsSync(ENV_FILE)) fail(`${ENV_FILE} doesn't exist.`);
-
-// Last matching line wins; strips surrounding quotes and a trailing
-// " # comment", like sync-config.sh.
-function readEnv(key) {
-  const lines = readFileSync(ENV_FILE, "utf8").split("\n").filter((l) => l.startsWith(`${key}=`));
-  if (!lines.length) return "";
-  const value = lines.pop().slice(key.length + 1).replace(/^"/, "").replace(/"$/, "").replace(/\s+#.*$/, "").trim();
-  return isPlaceholder(value) ? "" : value;
-}
-
-function isPlaceholder(value) {
-  return /^[Yy]our[-_]/.test(value) || /^(CHANGE_ME|changeme)/.test(value);
-}
-
-// Replaces key= in place or appends it. Writes into the existing file, so it
-// keeps its permissions.
-function saveEnv(key, value) {
-  const text = readFileSync(ENV_FILE, "utf8");
-  const lines = text.split("\n");
-  const index = lines.findIndex((l) => l.startsWith(`${key}=`));
-  if (index >= 0) {
-    lines[index] = `${key}=${value}`;
-    writeFileSync(ENV_FILE, lines.join("\n"));
-  } else {
-    writeFileSync(ENV_FILE, `${text}${text === "" || text.endsWith("\n") ? "" : "\n"}${key}=${value}\n`);
-  }
-}
+const ENV_FILE = resolveEnvFile(positional[0]);
+const readEnv = (key) => readEnvFrom(ENV_FILE, key);
+const saveEnv = (key, value) => saveEnvIn(ENV_FILE, key, value);
 
 // ---- Neon API -------------------------------------------------------------
 
