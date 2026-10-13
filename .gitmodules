@@ -26,6 +26,10 @@
 	path = requests
 	url = https://github.com/ModelEarth/requests
 	branch = main
+[submodule "tonic"]
+	path = tonic
+	url = https://github.com/ModelEarth/tonic
+	branch = main
 [submodule "trade"]
 	path = trade
 	url = https://github.com/ModelEarth/trade

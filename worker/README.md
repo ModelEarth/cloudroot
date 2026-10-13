@@ -41,6 +41,7 @@ is needed.
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
 | `GET /api/sanity-status`, `/sanity/*` | Proxy to the hosted Sanity site at `SANITY_SITE_URL` | `src/sanity.js` |
 | `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
+| `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule, not published as static files) |
 
 `/api/server-keys`, `/api/public-key`, `/api/validate-key` and the Sanity
 proxy mirror the routes in `chat/server.mjs`, so the `keys` widget and

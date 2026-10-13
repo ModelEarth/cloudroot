@@ -23,6 +23,7 @@ const LEAVE_OUT = new Set([
   "chat",        // Next.js app, deployed to Vercel
   "auth",        // replaced by its static export, below
   "worker",      // this Worker
+  "tonic",       // transcript webhook, run by this Worker at /ingest/*
   "automation",  // local scripts and config
   "support",     // agent setup notes
   "env", "bin", "docker", "safe",

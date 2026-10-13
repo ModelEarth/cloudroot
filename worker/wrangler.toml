@@ -11,12 +11,12 @@ routes = [
 ]
 
 # Static files: the webroot assembled by scripts/build-static.mjs.
-# Only /api/* and /sanity/* run the Worker code first; every other path is
-# served straight from these files.
+# Only /api/*, /sanity/* and /ingest/* (tonic's transcript webhook) run the
+# Worker code first; every other path is served straight from these files.
 [assets]
 directory = "./dist"
 binding = "ASSETS"
-run_worker_first = ["/api/*", "/sanity", "/sanity/*"]
+run_worker_first = ["/api/*", "/sanity", "/sanity/*", "/ingest/*"]
 html_handling = "auto-trailing-slash"
 
 # Secrets (LLM keys, BETTER_AUTH_SECRET, POSTGRES_URL, OAuth clients, ...)
@@ -27,6 +27,8 @@ html_handling = "auto-trailing-slash"
 # Other origins whose pages may call this API from a browser, with cookies.
 # Pages served by this Worker are same-origin and need no entry.
 ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888"
+# Where tonic's transcript webhook opens pull requests (tonic/README.md).
+ARCHIVIST_REPO = "Earthscape/archivist1"
 
 # `npm run dev`: serve on localhost rather than presenting requests as
 # cloud.model.earth (wrangler's default when a custom domain is set).
