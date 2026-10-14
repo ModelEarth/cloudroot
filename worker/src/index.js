@@ -1,7 +1,7 @@
 /**
  * CloudRoot Worker — serves cloud.model.earth: the website and its API.
  *
- * Static files: every path except /api/* (and /sanity/*) is served from the
+ * Static files: every path except /api/* (and /ingest/*) is served from the
  * build folder assembled from the webroot (scripts/build-static.mjs, [assets]
  * in wrangler.toml). Those requests never reach this code unless no file
  * matches, in which case they're handed back to the static files for a 404.
@@ -12,7 +12,6 @@
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
  *   GET  /api/cms/auth, /api/cms/callback  GitHub sign-in for Sveltia CMS (cms-auth.js)
- *   GET  /api/sanity-status, /sanity/*  Sanity site proxy (sanity.js)
  *   /api/health, /api/models, /api/generate/*, /api/upload/tripo,
  *   /api/proxy/model                    Arts Engine (requests/engine/worker/engine.js)
  *
@@ -27,7 +26,6 @@ import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey } from "./keys.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
 import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
-import { handleSanityStatus, isSanityPath, proxySanity } from "./sanity.js";
 // Kept in the requests submodule beside the engine's Rust backend (rust-api),
 // which it ports.
 import { handleEngine, isEnginePath } from "../../requests/engine/worker/engine.js";
@@ -43,7 +41,6 @@ async function routeApi(request, env, ctx, url) {
   if ((path === "/api/key-status" || path === "/api/server-keys") && isGet) return handleKeyStatus(env);
   if (path === "/api/public-key" && isGet) return handlePublicKey(env);
   if (path === "/api/validate-key") return handleValidateKey(request, env);
-  if (path === "/api/sanity-status" && isGet) return handleSanityStatus(env);
   if (isAuthPath(path)) return handleAuth(request, env, ctx, url);
   if (isCmsAuthPath(path)) return handleCmsAuth(request, env, url);
   if (isEnginePath(path)) return handleEngine(request, env);
@@ -56,7 +53,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (isSanityPath(url.pathname)) return proxySanity(request, env, url);
     if (url.pathname.startsWith("/ingest/")) return tonic.fetch(request, env);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 

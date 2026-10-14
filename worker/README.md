@@ -26,7 +26,7 @@ of its pages is a client component calling `/api/auth`, so no Next.js server
 is needed.
 
 `wrangler.toml`'s `[assets]` serves `dist/`; `run_worker_first` sends only
-`/api/*` and `/sanity/*` to the Worker code.
+`/api/*` and `/ingest/*` to the Worker code.
 
 ## API
 
@@ -40,12 +40,11 @@ is needed.
 | `GET /api/auth/configured-providers`, `/api/auth/db-status` | Which social providers are set up; database status | `src/auth/` |
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
 | `GET /api/cms/auth`, `/api/cms/callback` | GitHub sign-in popup for Sveltia CMS and localsite's content tools (needs `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET`) | `src/cms-auth.js` |
-| `GET /api/sanity-status`, `/sanity/*` | Proxy to the hosted Sanity site at `SANITY_SITE_URL` | `src/sanity.js` |
 | `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
 | `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule, not published as static files) |
 
-`/api/server-keys`, `/api/public-key`, `/api/validate-key` and the Sanity
-proxy mirror the routes in `chat/server.mjs`, so the `keys` widget and
+`/api/server-keys`, `/api/public-key` and `/api/validate-key`
+mirror the routes in `chat/server.mjs`, so the `keys` widget and
 `requests/engine` work unchanged. The Arts Engine routes are a JavaScript
 port of `requests/engine/rust-api`, kept in the `requests` submodule beside
 it; locally the engine page still uses the Rust backend on port 8082.
@@ -155,7 +154,6 @@ overwritten.
 | `GOOGLE_`, `MICROSOFT_`, `LINKEDIN_`, `DISCORD_`, `FACEBOOK_` + `CLIENT_ID` / `CLIENT_SECRET` | same | each social provider |
 | `BROWSER_ENCRYPTION_PRIVATE_KEY` | same | `/api/public-key` |
 | `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET` | same | `/api/cms/*`, the CMS's GitHub sign-in |
-| `SANITY_SITE_URL` (var or secret) | — | `/sanity/*` proxy |
 
 The deploy itself needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 The token needs Workers Scripts edit, plus Workers Routes and DNS edit on the
@@ -226,12 +224,11 @@ to the secret list in `deploy-worker.yml` and as a GitHub secret.
 .github/workflows/deploy-worker.yml   CI: build static files, push secrets, deploy
 worker/wrangler.toml                  Worker config: assets, custom domain, vars
 worker/scripts/build-static.mjs       assembles worker/dist from the webroot
-worker/src/index.js                   router: /api/* and /sanity/*; all else static
+worker/src/index.js                   router: /api/* and /ingest/*; all else static
 worker/src/chat.js                    LLM proxy
 worker/src/keys.js                    keys widget endpoints
 worker/src/auth/                      sign-in: BetterAuth, database, password hashing
 worker/src/cms-auth.js                GitHub sign-in popup for Sveltia CMS
-worker/src/sanity.js                  Sanity proxy
 worker/src/http.js                    CORS and response helpers
 worker/.dev.vars.example              local dev config template
 support/site/config.yaml              tells localsite where sign-in lives

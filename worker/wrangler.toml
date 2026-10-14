@@ -11,12 +11,12 @@ routes = [
 ]
 
 # Static files: the webroot assembled by scripts/build-static.mjs.
-# Only /api/*, /sanity/* and /ingest/* (tonic's transcript webhook) run the
+# Only /api/* and /ingest/* (tonic's transcript webhook) run the
 # Worker code first; every other path is served straight from these files.
 [assets]
 directory = "./dist"
 binding = "ASSETS"
-run_worker_first = ["/api/*", "/sanity", "/sanity/*", "/ingest/*"]
+run_worker_first = ["/api/*", "/ingest/*"]
 html_handling = "auto-trailing-slash"
 
 # Secrets (LLM keys, BETTER_AUTH_SECRET, POSTGRES_URL, OAuth clients, ...)

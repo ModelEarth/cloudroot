@@ -40,14 +40,14 @@ every push to `main` except chat-only changes.
 
 ### 2. Static files and custom domain ✅
 `worker/wrangler.toml`: `[assets] directory = "./dist"`, with
-`run_worker_first = ["/api/*", "/sanity", "/sanity/*"]`, and
+`run_worker_first = ["/api/*", "/ingest/*"]`, and
 `routes = [{ pattern = "cloud.model.earth", custom_domain = true }]`.
 The Worker is renamed `llm-proxy-worker` → `cloudroot`, since it now serves
 the whole site. The old `llm-proxy-worker` stays deployed until it's deleted
 in the Cloudflare dashboard.
 
 ### 3. Route only /api/* to Worker code ✅
-`worker/src/index.js` handles `/api/*` (and the `/sanity` proxy), and hands
+`worker/src/index.js` handles `/api/*`, and hands
 anything else back to the static files.
 
 ### 4. Deploy and check pages ✅
@@ -60,12 +60,10 @@ where `chat/server.mjs` serves `/auth/js/` from `chat/auth/js/`.
 back to the clipboard, as it already does on static hosts.
 
 ### 5. Small APIs from chat/server.mjs ✅
-Moved into `worker/src/keys.js` and `worker/src/sanity.js`:
+Moved into `worker/src/keys.js`:
 - `/api/server-keys` (served by the same handler as `/api/key-status`),
   `/api/public-key`, `/api/validate-key`. Used by the keys widget and
   `requests/engine`.
-- `/api/sanity-status` and the `/sanity/*` proxy, forwarding to the hosted
-  Sanity site at `SANITY_SITE_URL` (the Worker can't run the site itself).
 
 ### 6. Sign-in on the Worker ✅
 `worker/src/auth/` runs BetterAuth, replacing chat's Next.js routes for this

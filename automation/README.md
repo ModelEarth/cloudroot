@@ -323,7 +323,7 @@ subscription-based alternative to `ANTHROPIC_API_KEY` for local dev.
 
 This only touches the values the Cloudflare Worker uses — your local env
 file likely holds many more keys for other services (the Rust API, Arts
-Engine, Sanity, Supabase, etc.) that this script intentionally leaves
+Engine, Supabase, etc.) that this script intentionally leaves
 alone.
 
 ## Testing from a fork / other repos
