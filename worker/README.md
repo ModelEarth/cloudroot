@@ -39,6 +39,7 @@ is needed.
 | `/api/auth/*` | Sign-in (BetterAuth): sign-up, sign-in, sign-out, session, OAuth callbacks | `src/auth/` |
 | `GET /api/auth/configured-providers`, `/api/auth/db-status` | Which social providers are set up; database status | `src/auth/` |
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
+| `GET /api/cms/auth`, `/api/cms/callback` | GitHub sign-in popup for Sveltia CMS and localsite's content tools (needs `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET`) | `src/cms-auth.js` |
 | `GET /api/sanity-status`, `/sanity/*` | Proxy to the hosted Sanity site at `SANITY_SITE_URL` | `src/sanity.js` |
 | `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
 | `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule, not published as static files) |
@@ -61,7 +62,7 @@ returns 404 and the editor falls back to copying to the clipboard.
 `src/auth/` runs BetterAuth on the Worker, rebuilt from chat's Next.js
 routes (see `auth/PLAN.md`). The sign-in pages are the `auth` submodule at
 `/auth/`, and localsite's sign-in widget loads `/auth/js/auth-plugin.js`
-(set in `webroot.yaml`).
+(set in `support/site/config.yaml`).
 
 - **Without `POSTGRES_URL`**: BetterAuth runs stateless, keeping the session
   in an encrypted cookie. Social sign-in works; email/password is off.
@@ -72,6 +73,19 @@ Social providers turn on individually once both `<PROVIDER>_CLIENT_ID` and
 `<PROVIDER>_CLIENT_SECRET` are set. Register each OAuth app's callback as
 `https://cloud.model.earth/api/auth/callback/<provider>`
 (e.g. `.../callback/github`).
+
+### CMS sign-in
+
+`src/cms-auth.js` signs editors in to GitHub for Sveltia CMS and localsite's
+content tools (`localsite/edit/`), using the popup handshake Sveltia expects
+from an external OAuth client. Point the CMS at it with `auth_base_url` and
+`auth_endpoint` in the `cms:` block of `support/site/config.yaml`.
+
+It uses its own GitHub OAuth app, `CMS_GITHUB_CLIENT_ID` /
+`CMS_GITHUB_CLIENT_SECRET`, with the callback
+`https://cloud.model.earth/api/cms/callback`. GitHub's authorization page
+shows that app's name ("Authorize Model Earth CMS"). The token is only posted
+to this origin or one in `ALLOWED_ORIGINS`.
 
 ### Password hashing in Postgres
 
@@ -140,6 +154,7 @@ overwritten.
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub sign-in (GitHub reserves the `GITHUB_` prefix) |
 | `GOOGLE_`, `MICROSOFT_`, `LINKEDIN_`, `DISCORD_`, `FACEBOOK_` + `CLIENT_ID` / `CLIENT_SECRET` | same | each social provider |
 | `BROWSER_ENCRYPTION_PRIVATE_KEY` | same | `/api/public-key` |
+| `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET` | same | `/api/cms/*`, the CMS's GitHub sign-in |
 | `SANITY_SITE_URL` (var or secret) | — | `/sanity/*` proxy |
 
 The deploy itself needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
@@ -215,8 +230,9 @@ worker/src/index.js                   router: /api/* and /sanity/*; all else sta
 worker/src/chat.js                    LLM proxy
 worker/src/keys.js                    keys widget endpoints
 worker/src/auth/                      sign-in: BetterAuth, database, password hashing
+worker/src/cms-auth.js                GitHub sign-in popup for Sveltia CMS
 worker/src/sanity.js                  Sanity proxy
 worker/src/http.js                    CORS and response helpers
 worker/.dev.vars.example              local dev config template
-webroot.yaml                          tells localsite where sign-in lives
+support/site/config.yaml              tells localsite where sign-in lives
 ```

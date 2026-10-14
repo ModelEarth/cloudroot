@@ -25,7 +25,7 @@ const LEAVE_OUT = new Set([
   "worker",      // this Worker
   "tonic",       // transcript webhook, run by this Worker at /ingest/*
   "automation",  // local scripts and config
-  "support",     // agent setup notes
+  "support",     // agent setup notes; only support/site/config.yaml is published, below
   "env", "bin", "docker", "safe",
   "package.json", "pnpm-lock.yaml", "vercel.json",
   "check-package-sync.js", "set-root-directory.js", "frontend-example.js",
@@ -60,6 +60,10 @@ for (const file of ["index.html", "README.md", "manual.md"]) {
   const source = join(WEBROOT, "automation", file);
   if (existsSync(source)) cpSync(source, join(OUT, "automation", file));
 }
+
+// support/ holds agent setup notes, so only the site config localsite reads is published.
+const siteConfig = join(WEBROOT, "support", "site", "config.yaml");
+if (existsSync(siteConfig)) cpSync(siteConfig, join(OUT, "support", "site", "config.yaml"));
 
 const authExport = join(WEBROOT, "auth", "out");
 if (existsSync(authExport)) {

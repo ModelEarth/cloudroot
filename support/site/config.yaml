@@ -1,5 +1,5 @@
-# Site config for pages served from CloudRoot. localsite.js (loadWebrootYaml)
-# reads /webroot.yaml before the shared docker/webroot.yaml.
+# Site config for pages served from CloudRoot (formerly /webroot.yaml).
+# localsite.js (loadWebrootYaml) reads only /support/site/config.yaml.
 
 # Sign-in widget and API. The same paths work on cloud.model.earth, where the
 # Worker serves /auth/ (auth submodule) and /api/, and locally, where

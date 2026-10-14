@@ -52,8 +52,8 @@ anything else back to the static files.
 
 ### 4. Deploy and check pages ✅
 localsite's sign-in defaults assume the chat app under `/chat/`. Rather
-than change shared localsite code, CloudRoot ships `/webroot.yaml` (read by
-localsite before `docker/webroot.yaml`) pointing the widget at
+than change shared localsite code, CloudRoot ships `/support/site/config.yaml`
+(formerly `/webroot.yaml`, the only file localsite reads) pointing the widget at
 `/auth/js/auth-plugin.js` and the API at `/api`. The same paths work locally,
 where `chat/server.mjs` serves `/auth/js/` from `chat/auth/js/`.
 `/api/save-file` stays local-only; on Cloudflare localsite's editor falls

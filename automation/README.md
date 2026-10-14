@@ -1,6 +1,6 @@
 # Cloud Automation
 
-[manual.md](manual.md) | [Social sign-in](#social-sign-in)
+[manual.md](manual.md) | [Social sign-in](#social-sign-in) | [CMS sign-in](#cms-sign-in)
 
 ## Social sign-in
 
@@ -26,6 +26,31 @@ email and password only.
      chat/scripts/vercel-env.config.json`, which sets them and redeploys
      (see [`vercel-env.mjs`](#vercel-envmjs)).
    - Locally: restart `node chat/server.mjs`, which reads the env file.
+
+## CMS sign-in
+
+Sveltia CMS and localsite's content tools (`localsite/edit/`) sign editors in
+to GitHub through the Worker's `/api/cms/*` routes
+([worker/README.md](../worker/README.md#cms-sign-in)). GitHub's popup reads
+"Authorize <app name>", so name the OAuth app after the site.
+
+1. Register a GitHub OAuth app at
+   [GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers).
+   GitHub has no API for creating OAuth apps, so this step is by hand.
+   - **Application name**: the site's `title` from `support/site/config.yaml`
+     `sites:` plus " CMS", e.g. `Model Earth CMS`
+   - **Homepage URL**: the site's `base_url`
+   - **Authorization callback URL**: `https://cloud.model.earth/api/cms/callback`
+     (a second app with `http://localhost:8787/api/cms/callback` covers
+     `wrangler dev`)
+2. Add its pair to your local env file as `CMS_GITHUB_CLIENT_ID=` and
+   `CMS_GITHUB_CLIENT_SECRET=`.
+3. Run `./automation/sync-config.sh` to store them as GitHub secrets, then
+   push to `main` or rerun "Deploy Worker".
+4. In `support/site/config.yaml`, set the `cms:` block's
+   `auth_base_url: "https://cloud.model.earth"` and
+   `auth_endpoint: "api/cms/auth"`. Until then the CMS signs in through
+   Netlify's default service, whose popup reads "Authorize Netlify CMS".
 
 ## `sync-config.sh`
 

@@ -18,4 +18,7 @@ BETTER_AUTH_SECRET=CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32
 # POSTGRES_URL=postgresql://user:password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require
 # GITHUB_CLIENT_ID=your-github-client-id
 # GITHUB_CLIENT_SECRET=your-github-client-secret
+# CMS GitHub sign-in (README.md, "CMS sign-in"); callback http://localhost:8787/api/cms/callback
+# CMS_GITHUB_CLIENT_ID=
+# CMS_GITHUB_CLIENT_SECRET=
 # BROWSER_ENCRYPTION_PRIVATE_KEY=  # PEM, for /api/public-key

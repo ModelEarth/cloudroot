@@ -11,6 +11,7 @@
  *   GET  /api/key-status, /api/server-keys, /api/public-key
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
+ *   GET  /api/cms/auth, /api/cms/callback  GitHub sign-in for Sveltia CMS (cms-auth.js)
  *   GET  /api/sanity-status, /sanity/*  Sanity site proxy (sanity.js)
  *   /api/health, /api/models, /api/generate/*, /api/upload/tripo,
  *   /api/proxy/model                    Arts Engine (requests/engine/worker/engine.js)
@@ -25,6 +26,7 @@
 import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey } from "./keys.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
+import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
 import { handleSanityStatus, isSanityPath, proxySanity } from "./sanity.js";
 // Kept in the requests submodule beside the engine's Rust backend (rust-api),
 // which it ports.
@@ -43,6 +45,7 @@ async function routeApi(request, env, ctx, url) {
   if (path === "/api/validate-key") return handleValidateKey(request, env);
   if (path === "/api/sanity-status" && isGet) return handleSanityStatus(env);
   if (isAuthPath(path)) return handleAuth(request, env, ctx, url);
+  if (isCmsAuthPath(path)) return handleCmsAuth(request, env, url);
   if (isEnginePath(path)) return handleEngine(request, env);
 
   // e.g. /api/save-file, which only the local dev server provides.
