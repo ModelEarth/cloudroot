@@ -5,6 +5,9 @@
 # Worker serves /auth/ (auth submodule) and /api/, and locally, where
 # chat/server.mjs serves /auth/js/ (chat/auth/js) and /api/auth/.
 # Without this block, localsite assumes the chat app under /chat/.
+
+default: model.earth
+
 auth:
   plugin_url_development: /auth/js/auth-plugin.js
   modal_url_development: /auth/js/auth-modal.js
@@ -12,3 +15,17 @@ auth:
   plugin_url_production: /auth/js/auth-plugin.js
   modal_url_production: /auth/js/auth-modal.js
   api_url_production: /api
+
+sites:
+  model.earth:
+    title: "Model Earth"
+    base_url: "https://model.earth"
+    logo: "https://model.earth/localsite/img/logo/modelearth/model-earth.png"
+    favicon: "/localsite/img/logo/modelearth/model-earth.png"
+  maestro:
+    title: "Maestro"
+    base_url: "https://model.georgia.org"
+    domain_contains: "maestro"
+    logo: "https://tsqatl.maestropro.io/common/brand.png"
+    favicon: "https://tsqatl.maestropro.io/favicon.ico"
+    sideNavLive: false
