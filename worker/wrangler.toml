@@ -26,9 +26,7 @@ html_handling = "auto-trailing-slash"
 [vars]
 # Other origins whose pages may call this API from a browser, with cookies.
 # Pages served by this Worker are same-origin and need no entry.
-# The vercel.app origins are chat deployed to Vercel, whose localsite pages
-# use this API (only chat/public is served there, so no site config).
-ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888,https://modelearth.vercel.app,https://modelearth-modelearths-projects.vercel.app,https://modelearth-git-main-modelearths-projects.vercel.app,https://vercel-root-git-main-dream-studio2.vercel.app"
+ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888"
 # Where tonic's transcript webhook opens pull requests (tonic/README.md).
 ARCHIVIST_REPO = "Earthscape/archivist1"
 

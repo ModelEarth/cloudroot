@@ -112,6 +112,13 @@ no localsite folder, so `chat/next.config.mjs` proxies `/localsite/` from
 https://model.earth/localsite/ instead. The proxy is on only when
 `chat/public/localsite` is missing at build time.
 
+Sign-in on localsite pages uses chat's own `/api` there, so the session
+cookie stays on the Vercel site. The build also copies
+`support/site/config.yaml` and the `auth` submodule's widget
+(`auth/public/js` to `/auth/js/`) into `chat/public`. Chat deployed by itself
+uses its own `chat/public/support/site/config.yaml`, which loads the widget
+from cloud.model.earth and also points it at chat's `/api`.
+
 ## Scripts
 
 - `set-root-directory.js` - Sets this project's Root Directory to `"chat"`

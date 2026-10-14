@@ -1,5 +1,5 @@
 {
   "installCommand": "corepack use pnpm@9.12.3 && node --version && pnpm --version && node ../check-package-sync.js && pnpm install",
-  "buildCommand": "if [ -f ../localsite/js/localsite.js ]; then rm -rf public/localsite && cp -R ../localsite public/localsite && rm -rf public/localsite/.git; fi && pnpm build",
+  "buildCommand": "if [ -f ../localsite/js/localsite.js ]; then rm -rf public/localsite && cp -R ../localsite public/localsite && rm -rf public/localsite/.git; fi && if [ -f ../auth/public/js/auth-plugin.js ]; then rm -rf public/auth && mkdir -p public/auth && cp -R ../auth/public/js public/auth/js; fi && cp ../support/site/config.yaml public/support/site/config.yaml && pnpm build",
   "framework": "nextjs"
 }
