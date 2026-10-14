@@ -169,16 +169,25 @@ cd auth && pnpm install && pnpm build && cd ..   # sign-in pages (auth/out)
 cd worker
 npm install
 npm run build                    # assemble dist/ (add -- --skip-auth to skip /auth)
-cp .dev.vars.example .dev.vars   # fill in what you need; git-ignored
-npm run dev                      # http://localhost:8787
+npm run dev                      # http://localhost:3701
 ```
 
 `npm run dev` serves the static files and the API together, like
-production. `.dev.vars` is only for `wrangler dev`; production uses the
-config pushed by the workflow.
+production. It reads config from your env file (`automation/paths.yaml`
+`env_file:`, the file `sync-config.sh` uses), passing the env file's
+`AUTH_POSTGRES_URL` as `POSTGRES_URL`. To use other values locally, copy
+`.dev.vars.example` to `.dev.vars` (git-ignored), which then takes its place.
+Production uses the config pushed by the workflow.
 
 The everyday local server is still `PORT=3700 node chat/server.mjs`, which
-serves the same paths from the webroot plus chat's own API.
+serves the same paths from the webroot. Run `npm run dev` here alongside it
+for sign-in: the widget calls this Worker directly (`api_url_development` in
+`support/site/config.yaml`, which also works from any other local static
+server), and `chat/server.mjs` passes `/api/auth/*` and `/api/oauth/*` on to
+it, so the auth repo's `/auth/` pages and chat use it too. While the Worker
+isn't running, those fall back to chat's own sign-in API.
+Social sign-in through the local Worker needs OAuth apps whose callback is
+`http://localhost:3701/api/auth/callback/<provider>`.
 
 ## Testing from a fork
 

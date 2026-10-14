@@ -26,12 +26,15 @@ html_handling = "auto-trailing-slash"
 [vars]
 # Other origins whose pages may call this API from a browser, with cookies.
 # Pages served by this Worker are same-origin and need no entry.
-ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888"
+# The vercel.app origins are chat deployed to Vercel, whose localsite pages
+# use this API (only chat/public is served there, so no site config).
+ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888,https://modelearth.vercel.app,https://modelearth-modelearths-projects.vercel.app,https://modelearth-git-main-modelearths-projects.vercel.app,https://vercel-root-git-main-dream-studio2.vercel.app"
 # Where tonic's transcript webhook opens pull requests (tonic/README.md).
 ARCHIVIST_REPO = "Earthscape/archivist1"
 
 # `npm run dev`: serve on localhost rather than presenting requests as
 # cloud.model.earth (wrangler's default when a custom domain is set).
+# 3701 sits beside CloudRoot's 3700; 8787 is reserved for other local work.
 [dev]
-port = 8787
-host = "localhost:8787"
+port = 3701
+host = "localhost:3701"

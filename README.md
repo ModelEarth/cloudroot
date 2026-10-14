@@ -99,6 +99,19 @@ version. So a minimal root `package.json` is still required, containing:
 - a `"next"` dependency matching `chat/package.json`'s Next.js version (not
   actually installed/used - only read for framework detection)
 
+### localsite on Vercel
+
+With Root Directory set to `chat/`, Vercel serves only `chat/public/`, so the
+`localsite` submodule beside it isn't part of the site on its own.
+`vercel.json`'s `buildCommand` copies `../localsite` into
+`chat/public/localsite` before `pnpm build`, and `/localsite/` is then served
+from this repo's copy.
+
+Chat deployed by itself (e.g. modelearth.vercel.app, from the chat repo) has
+no localsite folder, so `chat/next.config.mjs` proxies `/localsite/` from
+https://model.earth/localsite/ instead. The proxy is on only when
+`chat/public/localsite` is missing at build time.
+
 ## Scripts
 
 - `set-root-directory.js` - Sets this project's Root Directory to `"chat"`

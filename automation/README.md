@@ -41,7 +41,7 @@ to GitHub through the Worker's `/api/cms/*` routes
      `sites:` plus " CMS", e.g. `Model Earth CMS`
    - **Homepage URL**: the site's `base_url`
    - **Authorization callback URL**: `https://cloud.model.earth/api/cms/callback`
-     (a second app with `http://localhost:8787/api/cms/callback` covers
+     (a second app with `http://localhost:3701/api/cms/callback` covers
      `wrangler dev`)
 2. Add its pair to your local env file as `CMS_GITHUB_CLIENT_ID=` and
    `CMS_GITHUB_CLIENT_SECRET=`.

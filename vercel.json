@@ -1,5 +1,5 @@
 {
   "installCommand": "corepack use pnpm@9.12.3 && node --version && pnpm --version && node ../check-package-sync.js && pnpm install",
-  "buildCommand": "pnpm build",
+  "buildCommand": "if [ -f ../localsite/js/localsite.js ]; then rm -rf public/localsite && cp -R ../localsite public/localsite && rm -rf public/localsite/.git; fi && pnpm build",
   "framework": "nextjs"
 }

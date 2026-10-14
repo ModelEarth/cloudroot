@@ -1,4 +1,5 @@
-# Copy this file to .dev.vars for local `wrangler dev` testing.
+# `npm run dev` reads your env file (automation/paths.yaml env_file:), so this
+# file is optional. Copy it to .dev.vars only to use other values locally.
 # .dev.vars is git-ignored — never commit real keys.
 
 # Agents
@@ -10,7 +11,7 @@ XAI_API_KEY=your-xai-api-key # Get key at console.x.ai
 XAI_API_URL=https://api.x.ai/v1 # X.ai API base URL (default: https://api.x.ai/v1)
 ARTS_ENGINE_PASSPHRASE=your-arts-engine-passphrase # Typing this as the Gemini key in the Arts Engine uses GEMINI_API_KEY above. 12+ characters; a shorter one is ignored.
 
-# Transcript intake (tonic/): POST http://localhost:8787/ingest/<WEBHOOK_SECRET>
+# Transcript intake (tonic/): POST http://localhost:3701/ingest/<WEBHOOK_SECRET>
 WEBHOOK_SECRET=your-webhook-secret # Long random string: openssl rand -hex 32. Part of the TranscripTonic extension's webhook URL.
 ARCHIVIST_TOKEN=your-archivist-token # A real token opens real PRs in ARCHIVIST_REPO, which runs its Claude workflow.
 # Sign-in (see README.md, "Sign-in")
@@ -18,7 +19,7 @@ BETTER_AUTH_SECRET=CHANGE_ME_GENERATE_WITH_openssl_rand_base64_32
 # POSTGRES_URL=postgresql://user:password@ep-example.us-east-2.aws.neon.tech/neondb?sslmode=require
 # GITHUB_CLIENT_ID=your-github-client-id
 # GITHUB_CLIENT_SECRET=your-github-client-secret
-# CMS GitHub sign-in (README.md, "CMS sign-in"); callback http://localhost:8787/api/cms/callback
+# CMS GitHub sign-in (README.md, "CMS sign-in"); callback http://localhost:3701/api/cms/callback
 # CMS_GITHUB_CLIENT_ID=
 # CMS_GITHUB_CLIENT_SECRET=
 # BROWSER_ENCRYPTION_PRIVATE_KEY=  # PEM, for /api/public-key
