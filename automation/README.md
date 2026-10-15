@@ -40,9 +40,14 @@ to GitHub through the Worker's `/api/cms/*` routes
    - **Application name**: the site's `title` from `support/site/config.yaml`
      `sites:` plus " CMS", e.g. `Model Earth CMS`
    - **Homepage URL**: the site's `base_url`
-   - **Authorization callback URL**: `https://cloud.model.earth/api/cms/callback`
+   - **Redirect URI**: `https://cloud.model.earth/api/cms/callback`
      (a second app with `http://localhost:3701/api/cms/callback` covers
-     `wrangler dev`)
+     `wrangler dev`). Leave **Allow wildcard matching** off: the Worker
+     always uses this exact URI.
+   - Leave **Enable Device Flow** off: sign-in uses the browser popup.
+   - Checking **Expire user access tokens** will require daily logins: each
+     token stops working after 8 hours, and the Worker doesn't use refresh
+     tokens, so users sign in again.
 2. Add its pair to your local env file as `CMS_GITHUB_CLIENT_ID=` and
    `CMS_GITHUB_CLIENT_SECRET=`.
 3. Run `./automation/sync-config.sh` to store them as GitHub secrets, then
