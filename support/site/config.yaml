@@ -24,7 +24,8 @@ sites:
     favicon: "/localsite/img/logo/modelearth/model-earth.png"
   maestro:
     title: "Maestro"
-    base_url: "https://model.georgia.org"
+    base_url: "https://neighborhood.org"
+    home_url: "https://tsqatl.maestropro.io"
     domain_contains: "maestro"
     logo: "https://tsqatl.maestropro.io/common/brand.png"
     favicon: "https://tsqatl.maestropro.io/favicon.ico"
