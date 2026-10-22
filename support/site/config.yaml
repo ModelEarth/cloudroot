@@ -28,5 +28,6 @@ sites:
     home_url: "https://tsqatl.maestropro.io"
     domain_contains: "maestro"
     logo: "https://tsqatl.maestropro.io/common/brand.png"
+    logo_height: "70px"
     favicon: "https://tsqatl.maestropro.io/favicon.ico"
     sideNavLive: false

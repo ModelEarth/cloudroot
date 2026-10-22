@@ -5,7 +5,7 @@ A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Gener
 The chat submodule deploys to Vercel directly; it isn't converted for
 Cloudflare (see [PLAN.md](PLAN.md)). On cloud.model.earth:
 
-- [Arts Engine](https://cloud.model.earth/requests/engine/): the LLM interface
+- [Project Engine](https://cloud.model.earth/requests/engine/) ([/requests/engine](requests/engine/)): the LLM interface
   in the `requests` submodule. Generating needs its Rust backend running on
   your own computer for now.
 - [Account](https://cloud.model.earth/auth/): sign-in, optional.
