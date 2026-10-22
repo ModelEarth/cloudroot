@@ -2,8 +2,7 @@
 
 A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Generates Cloudflare site at [cloud.model.earth](https://cloud.model.earth)
 
-The chat submodule deploys to Vercel directly; it isn't converted for
-Cloudflare (see [PLAN.md](PLAN.md)). On cloud.model.earth:
+On cloud.model.earth:
 
 - [Project Engine](https://cloud.model.earth/requests/engine/) ([/requests/engine](requests/engine/)): the LLM interface
   in the `requests` submodule. Generating needs its Rust backend running on
@@ -11,20 +10,56 @@ Cloudflare (see [PLAN.md](PLAN.md)). On cloud.model.earth:
 - [Account](https://cloud.model.earth/auth/): sign-in, optional.
 - [Keys](https://cloud.model.earth/keys/): LLM keys, kept in your browser.
 
-NodeJS resides in "chat" submodule.
+## Contributing from a fork
 
-First-time / from a fresh clone, run:
+Contributors work in their own fork of
+[ModelEarth/CloudRoot](https://github.com/ModelEarth/CloudRoot) and send
+changes back as pull requests.
 
-    git submodule update --init --recursive   # pull in all submodule content
-    cd chat && pnpm install                   # install Node deps (needs pnpm)
+1. Fork ModelEarth/CloudRoot on GitHub, then clone your fork with its
+   submodules:
 
-Launch site, each time (port can be changed):
+       git clone --recurse-submodules https://github.com/[your account]/CloudRoot
+       cd CloudRoot
+       git remote add upstream https://github.com/ModelEarth/CloudRoot
 
-    PORT=3700 node chat/server.mjs
+2. Sync often, before starting new work:
 
-Site comes up at http://localhost:3700
+       git pull upstream main
+       git submodule update --init --recursive
+       git push origin main
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/ModelEarth/CloudRoot)
+3. Run the site locally (below), make your changes, push them to your fork,
+   and open a pull request to ModelEarth/CloudRoot. Merging to `main` there
+   deploys cloud.model.earth.
+
+Changes inside a submodule (`localsite`, `requests`, ...) belong in that
+submodule's own repo, so fork and pull-request it too; the CloudRoot pull
+request then moves the submodule to the new commit.
+
+If you turn on Actions in your fork, it runs the same deploy workflow on each
+push. Without your own Cloudflare secrets it stops at the deploy step, which
+is harmless. To deploy
+your fork to your own Cloudflare account, see "Testing from a fork" in
+[worker/README.md](worker/README.md#testing-from-a-fork).
+
+## Run locally
+
+The site runs the way cloud.model.earth does on Cloudflare, without the
+`chat` submodule:
+
+    cd auth && pnpm install && pnpm build && cd ..   # sign-in pages (auth/out)
+    cd worker && npm install
+    npm run build                                    # assemble worker/dist
+    npm run dev
+
+Site comes up at http://localhost:3701. Run `npm run build` again after
+pulling or editing pages, since `npm run dev` serves the copy in
+`worker/dist`. Add `-- --skip-auth` to the build to skip the sign-in pages.
+
+With an agent, say "Start CloudRoot" (see [AGENTS.md](AGENTS.md)). It also
+offers the older Vercel setup on port 3700, described under
+[Vercel](#vercel) below.
 
 ## Orchestration
 
@@ -51,18 +86,43 @@ this webroot and its submodules (minus `chat/`), plus the API under `/api/`:
 the LLM proxy, the keys widget endpoints, and sign-in (BetterAuth on Postgres,
 with the `auth` submodule's pages at `/auth/`). GitHub Actions builds and
 deploys it on every push to `main`, pushing config from GitHub secrets into
-the Worker.
+the Worker. To redeploy without a new commit, run "Deploy Worker
+(cloud.model.earth)" from the repo's Actions tab, or
+`gh workflow run deploy-worker.yml`. A deploy takes about a minute;
+https://cloud.model.earth/api/health returns 200 once it's live.
 
 See [worker/README.md](worker/README.md) for setup, secrets and deployment,
 and [PLAN.md](PLAN.md) for the migration steps.
 
-## Status: Working ✅
+## Vercel
+
+The chat submodule deploys to Vercel directly; it isn't converted for
+Cloudflare (see [PLAN.md](PLAN.md)). NodeJS resides in the "chat" submodule.
+
+First-time / from a fresh clone, run:
+
+    git submodule update --init --recursive   # pull in all submodule content
+    cd chat && pnpm install                   # install Node deps (needs pnpm)
+
+Launch site, each time (port can be changed):
+
+    PORT=3700 node chat/server.mjs
+
+Site comes up at http://localhost:3700
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https://github.com/ModelEarth/CloudRoot)
+
+### Status: Working ✅
 
 The chat submodule deploys successfully on Vercel:  
 [studio2.vercel.app](https://vercel-root-git-main-dream-studio2.vercel.app)  
 [modelearth.vercel.app](https://modelearth.vercel.app) - chat repo is webroot
 
-## Root cause
+Vercel builds on each push to `main` of the repo its project is connected
+to. Run `node check-package-sync.js` after moving the chat submodule, since
+the build stops if the root `package.json` no longer matches chat's.
+
+### Root cause
 
 > The fix below evolved from an initial duplicate-package.json-only workaround
 > into also setting Vercel's Root Directory (see Setup below). The diagnosis
@@ -83,7 +143,7 @@ Next.js framework version. Without it, two things silently broke:
 3. Framework detection also failed separately, since it couldn't find `next`
    listed as a dependency at the repo root either.
 
-## Setup
+### Setup
 
 This repo uses Vercel's "Root Directory" project setting, pointed at `chat/`,
 so Vercel treats `chat/` as the working root for install, build, and output -
@@ -99,7 +159,7 @@ version. So a minimal root `package.json` is still required, containing:
 - a `"next"` dependency matching `chat/package.json`'s Next.js version (not
   actually installed/used - only read for framework detection)
 
-### localsite on Vercel
+#### localsite on Vercel
 
 With Root Directory set to `chat/`, Vercel serves only `chat/public/`, so the
 `localsite` submodule beside it isn't part of the site on its own.
@@ -119,7 +179,7 @@ cookie stays on the Vercel site. The build also copies
 uses its own `chat/public/support/site/config.yaml`, which loads the widget
 from cloud.model.earth and also points it at chat's `/api`.
 
-## Scripts
+### Scripts
 
 - `set-root-directory.js` - Sets this project's Root Directory to `"chat"`
   via Vercel's REST API. Requires `VERCEL_API_TOKEN` in `.env.local` (not
@@ -130,7 +190,7 @@ from cloud.model.earth and also points it at chat's `/api`.
   drifted out of sync, rather than silently breaking. Ignores pnpm's
   integrity hash suffix when comparing versions.
 
-## Note on webroot
+### Note on webroot
 
 This same root cause likely affects the full webroot repo, which also has no
 root-level `package.json`.

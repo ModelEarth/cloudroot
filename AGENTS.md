@@ -52,6 +52,12 @@ cd worker && npm run dev
 
 This is the same Worker as choice 1, so if choice 1 is already running, sign-in already works and the Worker doesn't need starting again.
 
+## Deploy
+
+Deploying to Cloudflare and to Vercel is simply pushing to `main` on GitHub. GitHub Actions deploys cloud.model.earth (.github/workflows/deploy-worker.yml), and Vercel builds the chat submodule.
+
+Before pushing, show the user what will be committed and confirm, since a push publishes the live site. Don't run `npx wrangler deploy` locally: it skips the secrets the workflow pushes from GitHub. More details are in README.md.
+
 ## Git Commits
 
 Never add Claude Code attribution or co-authored-by lines to commits.
