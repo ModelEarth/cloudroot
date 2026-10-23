@@ -12,6 +12,17 @@ target
 *.key
 **/paths.yaml
 
+# Source code a static site can't run (C# and Razor views in trade/IndustryDB),
+# and .NET settings files, which can hold database connection strings.
+*.cs
+*.cshtml
+appsettings*.json
+
+# feed's React source: the feed pages load the built app from feed/dist, but
+# feed/dist and feed's pages use the images and favicon in feed/src/assets.
+/feed/src/*
+!/feed/src/assets
+
 # Servers, tooling and local config rather than pages.
 /chat
 /worker

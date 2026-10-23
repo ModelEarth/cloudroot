@@ -1,12 +1,10 @@
-# CloudRoot3
+# CloudRoot
 
 A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Generates Cloudflare site at [cloud.model.earth](https://cloud.model.earth)
 
 On cloud.model.earth:
 
-- [Project Engine](https://cloud.model.earth/requests/engine/) ([/requests/engine](requests/engine/)): the LLM interface
-  in the `requests` submodule. Generating needs its Rust backend running on
-  your own computer for now.
+- [Project Engine](https://cloud.model.earth/requests/engine/) ([/requests/engine](requests/engine/)): LLM interface
 - [Account](https://cloud.model.earth/auth/): sign-in, optional.
 - [Keys](https://cloud.model.earth/keys/): LLM keys, kept in your browser.
 
