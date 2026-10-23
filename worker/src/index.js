@@ -49,11 +49,28 @@ async function routeApi(request, env, ctx, url) {
   return json({ error: `No API at ${path}` }, 404);
 }
 
+// The auth submodule is a Next.js app, so /auth/ serves its static export
+// (auth/out) rather than its source. Redirects from the asset server (adding
+// a trailing slash) are pointed back under /auth/.
+async function serveAuthExport(request, env, url) {
+  const assetUrl = new URL(url);
+  assetUrl.pathname = "/auth/out" + url.pathname.slice("/auth".length);
+  const response = await env.ASSETS.fetch(new Request(assetUrl, request));
+  const location = response.headers.get("Location");
+  if (!location) return response;
+  const target = new URL(location, assetUrl);
+  if (target.origin !== url.origin || !target.pathname.startsWith("/auth/out")) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Location", "/auth" + target.pathname.slice("/auth/out".length) + target.search);
+  return new Response(response.body, { status: response.status, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith("/ingest/")) return tonic.fetch(request, env);
+    if (url.pathname === "/auth" || url.pathname.startsWith("/auth/")) return serveAuthExport(request, env, url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     if (request.method === "OPTIONS") {

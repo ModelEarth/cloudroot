@@ -22,8 +22,9 @@ cloud.model.earth ──┬─ /api/*     Worker code: /api/chat, /api/key-statu
 ```
 
 - **Static files.** Workers serve a folder of static files, so every path
-  except `/api/*` comes from `worker/dist`, assembled from the webroot by
-  `worker/scripts/build-static.mjs`.
+  except `/api/*` comes straight from the webroot, minus what
+  `.assetsignore` leaves out. (Until October 2026 they were first copied
+  into `worker/dist` by a build script.)
 - **API.** `/api/chat` and `/api/key-status` stay as they were, joined by the
   small APIs moved from `chat/server.mjs` and by sign-in.
 - **Browser access.** Pages and API share one origin, so the site's own

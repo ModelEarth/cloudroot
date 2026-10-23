@@ -1,8 +1,9 @@
 name: Deploy Worker (cloud.model.earth)
 
-# One Worker serves the whole site: static files assembled from the webroot
-# (submodules included) plus the API under /api/. Any change outside chat/
-# can affect the site, so every push to main deploys.
+# One Worker serves the whole site: static files straight from the webroot
+# (submodules included, minus what .assetsignore leaves out) plus the API
+# under /api/. Any change outside chat/ can affect the site, so every push to
+# main deploys.
 on:
   push:
     branches: [main]
@@ -20,8 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      # Every submodule except chat, which deploys to Vercel and is too big to
+      # send to Cloudflare (.assetsignore leaves it out of the site too).
+      - name: Check out submodules (except chat)
+        run: git submodule update --init --recursive $(git config -f .gitmodules --get-regexp '\.path$' | awk '$2 != "chat" { print $2 }')
 
       - uses: actions/setup-node@v4
         with:
@@ -38,10 +42,6 @@ jobs:
       - name: Install Worker dependencies
         working-directory: worker
         run: npm ci
-
-      - name: Assemble static files (worker/dist)
-        working-directory: worker
-        run: npm run build
 
       # GitHub secrets -> Worker secrets, uploaded with the new version.
       # Unset or empty GitHub secrets are skipped, so a value set directly in

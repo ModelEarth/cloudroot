@@ -6,6 +6,10 @@
 	path = chat
 	url = https://github.com/ModelEarth/chat
 	branch = main
+[submodule "engine"]
+	path = engine
+	url = https://github.com/ModelEarth/engine
+	branch = main
 [submodule "feed"]
 	path = feed
 	url = https://github.com/ModelEarth/feed

@@ -5,28 +5,32 @@ its API on the same origin. There is no separate API host.
 
 ```
 browser ──> cloud.model.earth ──┬─ /api/*      Worker code (src/)
-                                └─ everything  static files (dist/), assembled
-                                   else        from the webroot + submodules
+                                └─ everything  static files, straight from
+                                   else        the webroot + submodules
 ```
 
 Pages call `/api/...` on their own origin, so they need no CORS entry.
-GitHub Actions builds the static files, pushes config from GitHub secrets
+GitHub Actions builds the sign-in pages, pushes config from GitHub secrets
 into the Worker, and deploys on every push to `main`.
 
 ## Static files
 
-`scripts/build-static.mjs` (`npm run build`) copies the webroot into
-`dist/`, with the submodules checked out. It leaves out `chat/` (Next.js,
-deployed to Vercel), servers and tooling (`worker/`, `automation/`,
-`support/`), dot-files, `node_modules` and key files.
+`wrangler.toml`'s `[assets]` serves the webroot itself (`directory = ".."`),
+with the submodules checked out. There's no build step: the files are
+uploaded as they are. [`../.assetsignore`](../.assetsignore) (same syntax as
+`.gitignore`) leaves out `chat/` (Next.js, deployed to Vercel), servers and
+tooling (`worker/`, and most of `tonic/`, `automation/` and `support/`),
+dot-files, `node_modules` and key files. The deploy workflow doesn't check
+out `chat/` at all.
 
-The `auth` submodule is a Next.js app, so its **static export** (`auth/out`,
-from `pnpm build` in `auth/`) is copied to `/auth/` in its place. Every one
-of its pages is a client component calling `/api/auth`, so no Next.js server
-is needed.
+The `auth` submodule is a Next.js app, so only its **static export**
+(`auth/out`, from `pnpm build` in `auth/`) is published, and the Worker
+serves it at `/auth/` (`serveAuthExport` in `src/index.js`). Every one of its
+pages is a client component calling `/api/auth`, so no Next.js server is
+needed.
 
-`wrangler.toml`'s `[assets]` serves `dist/`; `run_worker_first` sends only
-`/api/*` and `/ingest/*` to the Worker code.
+`run_worker_first` sends `/api/*`, `/ingest/*` and `/auth/*` to the Worker
+code; every other path is served straight from the files.
 
 ## API
 
@@ -41,7 +45,7 @@ is needed.
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
 | `GET /api/cms/auth`, `/api/cms/callback` | GitHub sign-in popup for Sveltia CMS and localsite's content tools (needs `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET`) | `src/cms-auth.js` |
 | `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
-| `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule, not published as static files) |
+| `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule; only its README page is published) |
 
 `/api/server-keys`, `/api/public-key` and `/api/validate-key`
 mirror the routes in `chat/server.mjs`, so the `keys` widget and
@@ -168,12 +172,16 @@ covers getting them by hand.
 cd auth && pnpm install && pnpm build && cd ..   # sign-in pages (auth/out)
 cd worker
 npm install
-npm run build                    # assemble dist/ (add -- --skip-auth to skip /auth)
 npm run dev                      # http://localhost:3701
 ```
 
 `npm run dev` serves the static files and the API together, like
-production. It reads config from your env file (`automation/paths.yaml`
+production, and page edits show up on reload with no build step. wrangler
+watches its whole assets folder for changes, ignoring `.assetsignore`, so
+`scripts/dev.mjs` hands it `worker/.wrangler/webroot` in place of the
+webroot: links to the webroot's entries, minus `chat/`, `worker/` and the
+others `.assetsignore` leaves out whole. Restart it after adding a top-level
+folder or submodule. It reads config from your env file (`automation/paths.yaml`
 `env_file:`, the file `sync-config.sh` uses), passing the env file's
 `AUTH_POSTGRES_URL` as `POSTGRES_URL`. To use other values locally, copy
 `.dev.vars.example` to `.dev.vars` (git-ignored), which then takes its place.
@@ -230,10 +238,11 @@ to the secret list in `deploy-worker.yml` and as a GitHub secret.
 ## Files
 
 ```
-.github/workflows/deploy-worker.yml   CI: build static files, push secrets, deploy
+.github/workflows/deploy-worker.yml   CI: build sign-in pages, push secrets, deploy
+.assetsignore                         what the webroot leaves out of the site
 worker/wrangler.toml                  Worker config: assets, custom domain, vars
-worker/scripts/build-static.mjs       assembles worker/dist from the webroot
-worker/src/index.js                   router: /api/* and /ingest/*; all else static
+worker/scripts/dev.mjs                npm run dev: local config, linked webroot
+worker/src/index.js                   router: /api/*, /ingest/*, /auth/*; all else static
 worker/src/chat.js                    LLM proxy
 worker/src/keys.js                    keys widget endpoints
 worker/src/auth/                      sign-in: BetterAuth, database, password hashing

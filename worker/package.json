@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-static.mjs",
     "dev": "node scripts/dev.mjs",
     "deploy": "wrangler deploy"
   },

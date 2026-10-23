@@ -1,0 +1,53 @@
+# Kept out of cloud.model.earth, which the Worker serves straight from this
+# folder (worker/wrangler.toml, [assets] directory = ".."). Same syntax as
+# .gitignore. Everything not listed here is published.
+
+# Never published, at any depth: dot-files and dot-folders (.git, .env, ...),
+# node_modules, Rust target folders, private key files, and paths.yaml
+# (automation's local config, which points to the env file).
+.*
+node_modules
+target
+*.pem
+*.key
+**/paths.yaml
+
+# Servers, tooling and local config rather than pages.
+/chat
+/worker
+/env
+/bin
+/docker
+/package.json
+/pnpm-lock.yaml
+/vercel.json
+/check-package-sync.js
+/set-root-directory.js
+/frontend-example.js
+/AGENTS.md
+/CLAUDE.md
+
+# auth is a Next.js app, so only its static export (auth/out, made by
+# `pnpm build` in auth/) is published. The Worker serves it at /auth/.
+/auth/*
+!/auth/out
+
+# automation holds local scripts and config: only its README page is published.
+/automation/*
+!/automation/index.html
+!/automation/README.md
+!/automation/manual.md
+
+# tonic is the transcript webhook, run by the Worker at /ingest/*: only its
+# README page (index.html renders README.md) and the docs it links are published.
+/tonic/*
+!/tonic/index.html
+!/tonic/README.md
+!/tonic/PLAN.md
+!/tonic/AGENTS.md
+
+# support holds agent setup notes: only the site config localsite reads is published.
+/support/*
+!/support/site
+/support/site/*
+!/support/site/config.yaml

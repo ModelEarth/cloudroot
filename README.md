@@ -1,4 +1,4 @@
-# CloudRoot
+# CloudRoot3
 
 A webroot for Cloudflare, [Netlify](https://www.netlify.com/) and Vercel.  Generates Cloudflare site at [cloud.model.earth](https://cloud.model.earth)
 
@@ -12,9 +12,7 @@ On cloud.model.earth:
 
 ## Contributing from a fork
 
-Contributors work in their own fork of
-[ModelEarth/CloudRoot](https://github.com/ModelEarth/CloudRoot) and send
-changes back as pull requests.
+Contributors work in their own fork and send changes back as pull requests.
 
 1. Fork ModelEarth/CloudRoot on GitHub, then clone your fork with its
    submodules:
@@ -50,12 +48,12 @@ The site runs the way cloud.model.earth does on Cloudflare, without the
 
     cd auth && pnpm install && pnpm build && cd ..   # sign-in pages (auth/out)
     cd worker && npm install
-    npm run build                                    # assemble worker/dist
     npm run dev
 
-Site comes up at http://localhost:3701. Run `npm run build` again after
-pulling or editing pages, since `npm run dev` serves the copy in
-`worker/dist`. Add `-- --skip-auth` to the build to skip the sign-in pages.
+Site comes up at http://localhost:3701, serving the files in this folder
+directly, so edits show up when you reload the page. Restart it after adding
+a top-level folder or submodule. The sign-in pages need rebuilding only when
+the `auth` submodule changes.
 
 With an agent, say "Start CloudRoot" (see [AGENTS.md](AGENTS.md)). It also
 offers the older Vercel setup on port 3700, described under
@@ -81,11 +79,12 @@ Instead of maintaining Dockerfiles and a Kubernetes cluster, Cloudflare Workers 
 ## Cloudflare: cloud.model.earth
 
 The `worker/` folder holds a Cloudflare Worker that serves
-[cloud.model.earth](https://cloud.model.earth): the static site built from
-this webroot and its submodules (minus `chat/`), plus the API under `/api/`:
+[cloud.model.earth](https://cloud.model.earth): the static files of this
+webroot and its submodules, uploaded as they are, plus the API under `/api/`:
 the LLM proxy, the keys widget endpoints, and sign-in (BetterAuth on Postgres,
-with the `auth` submodule's pages at `/auth/`). GitHub Actions builds and
-deploys it on every push to `main`, pushing config from GitHub secrets into
+with the `auth` submodule's pages at `/auth/`). [.assetsignore](.assetsignore)
+lists what's left out, including `chat/`, which is too big for Cloudflare.
+GitHub Actions deploys it on every push to `main`, pushing config from GitHub secrets into
 the Worker. To redeploy without a new commit, run "Deploy Worker
 (cloud.model.earth)" from the repo's Actions tab, or
 `gh workflow run deploy-worker.yml`. A deploy takes about a minute;

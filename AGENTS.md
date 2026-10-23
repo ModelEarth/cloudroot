@@ -25,12 +25,12 @@ When started from ../desktop/AGENTS.md, follow its browser guidance instead (a k
 
 This matches the cloud.model.earth deployment: one Cloudflare Worker serves the static site and the /api routes on the same origin. It doesn't use the chat submodule, which is too big for free Cloudflare.
 
-cd worker && npm run build && npm run dev
+cd worker && npm run dev
 
 Site comes up at http://localhost:3701
 
-- `npm run build` copies the webroot into worker/dist (leaving out chat), and `npm run dev` serves only that copy. Run the build again after a pull or after editing pages, or the site shows the old files.
-- The build copies the sign-in pages from auth/out and stops if they're missing. Build them first with `cd auth && pnpm install && pnpm build`, or use `npm run build -- --skip-auth` to build without them.
+- There's no build step: the site is served straight from the webroot, minus what .assetsignore leaves out (including chat), so edits show up on reload. Restart it after adding a top-level folder or submodule.
+- The sign-in pages at /auth/ come from auth/out. If it's missing, build it with `cd auth && pnpm install && pnpm build`.
 - If worker/node_modules is missing, run `npm install` in worker first.
 - `npm run dev` reads secrets from the env file named in automation/paths.yaml (`env_file:`). A worker/.dev.vars file, if present, is used instead.
 - As on Cloudflare, /api/save-file (the Markdown editor's save) returns 404.

@@ -6,14 +6,23 @@
 // Values go to wrangler through the process environment, not a file. As in
 // sync-config.sh, the env file's AUTH_POSTGRES_URL is the Worker's
 // POSTGRES_URL. A worker/.dev.vars file, if present, is used instead.
+//
+// The site's static files are the webroot itself (wrangler.toml [assets]),
+// but wrangler dev watches its whole assets directory for changes, ignoring
+// .assetsignore. Watching the webroot would include chat/ and worker/
+// (node_modules, and wrangler's own .wrangler/ output, which reloads it
+// endlessly). So locally it's given worker/.wrangler/webroot instead: links to
+// the webroot's top-level entries, minus those .assetsignore leaves out whole.
+// Edits show up on reload, with no build step.
 
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const WORKER_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const AUTOMATION_DIR = resolve(WORKER_DIR, "..", "automation");
+const WEBROOT = resolve(WORKER_DIR, "..");
+const AUTOMATION_DIR = resolve(WEBROOT, "automation");
 
 // The Worker's secrets, as deploy-worker.yml passes them (minus the deploy's
 // own Cloudflare credentials).
@@ -46,8 +55,33 @@ function readEnvFile(path) {
   return values;
 }
 
+// Top-level entries .assetsignore leaves out whole ("/chat", not "/auth/*").
+function leftOutEntries() {
+  const ignore = readFileSync(join(WEBROOT, ".assetsignore"), "utf8");
+  return new Set([...ignore.matchAll(/^\/([^/*!\s]+)\s*$/gm)].map((match) => match[1]));
+}
+
+function linkWebroot() {
+  const dir = join(WORKER_DIR, ".wrangler", "webroot");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const leftOut = leftOutEntries();
+  for (const name of readdirSync(WEBROOT)) {
+    if (leftOut.has(name) || name === "node_modules" || (name.startsWith(".") && name !== ".assetsignore")) continue;
+    if (name === "auth") {
+      // Only auth/out is published, so auth/node_modules isn't watched.
+      mkdirSync(join(dir, "auth"));
+      if (existsSync(join(WEBROOT, "auth", "out"))) symlinkSync(join(WEBROOT, "auth", "out"), join(dir, "auth", "out"));
+      else console.log("[dev] auth/out is missing, so /auth/ is empty. Build it: cd auth && pnpm install && pnpm build");
+      continue;
+    }
+    symlinkSync(join(WEBROOT, name), join(dir, name));
+  }
+  return dir;
+}
+
 let env = { ...process.env };
-const args = ["dev", ...process.argv.slice(2)];
+const args = ["dev", "--assets", linkWebroot(), ...process.argv.slice(2)];
 
 if (existsSync(join(WORKER_DIR, ".dev.vars"))) {
   console.log("[dev] Using worker/.dev.vars");

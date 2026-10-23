@@ -10,13 +10,14 @@ routes = [
   { pattern = "cloud.model.earth", custom_domain = true },
 ]
 
-# Static files: the webroot assembled by scripts/build-static.mjs.
-# Only /api/* and /ingest/* (tonic's transcript webhook) run the
-# Worker code first; every other path is served straight from these files.
+# Static files: the webroot itself (this folder's parent), minus what
+# ../.assetsignore leaves out. /api/*, /ingest/* (tonic's transcript webhook)
+# and /auth/* (the auth export, src/index.js) run the Worker code first;
+# every other path is served straight from these files.
 [assets]
-directory = "./dist"
+directory = ".."
 binding = "ASSETS"
-run_worker_first = ["/api/*", "/ingest/*"]
+run_worker_first = ["/api/*", "/ingest/*", "/auth", "/auth/*"]
 html_handling = "auto-trailing-slash"
 
 # Secrets (LLM keys, BETTER_AUTH_SECRET, POSTGRES_URL, OAuth clients, ...)
@@ -26,7 +27,7 @@ html_handling = "auto-trailing-slash"
 [vars]
 # Other origins whose pages may call this API from a browser, with cookies.
 # Pages served by this Worker are same-origin and need no entry.
-ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:8887,http://localhost:8888"
+ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:3701,http://localhost:8887,http://localhost:8888"
 # Where tonic's transcript webhook opens pull requests (tonic/README.md).
 ARCHIVIST_REPO = "Earthscape/archivist1"
 
