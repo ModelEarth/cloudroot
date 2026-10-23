@@ -31,3 +31,49 @@ sites:
     logo_height: "70px"
     favicon: "https://tsqatl.maestropro.io/favicon.ico"
     sideNavLive: false
+
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
+app_title: Edit My Page
+
+# Content is stored in each visitor's own fork of DesktopFolders/content. localsite's
+# launchCMS callers (localsite/edit "Edit Files" and the Markdown "Edit Content" menu) sign in,
+# create the fork if needed, and set backend.repo to it, so edits never go to this repo.
+backend:
+  name: github
+  repo: DesktopFolders/content
+  branch: main
+
+media_folder: img
+public_folder: /img
+
+collections:
+  - name: posts
+    label: Posts
+    label_singular: Post
+    folder: posts
+    create: true
+    # One full-width editing pane; the preview can still be opened from the editor's menu.
+    editor:
+      preview: false
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Date, name: date, widget: datetime, type: date }
+      - { label: Body, name: body, widget: richtext }
+
+# CMS - read by localsite/js/cms.js into window.CMS_SITE_CONFIG
+cms:
+  app_title: "Site Editor"
+  inline_editor: true
+  # GitHub sign-in relay for Sveltia CMS and localsite/edit's content tools: the Worker's
+  # /api/cms/auth (automation/README.md, "CMS sign-in"). It posts the token only to its own
+  # origin or one in ALLOWED_ORIGINS (worker/wrangler.toml).
+  auth_base_url: "https://cloud.model.earth"
+  auth_endpoint: "api/cms/auth"
+  logo:
+    show_in_header: false
+    show_in_intro: false
+  extra_css:
+    - "/localsite/css/base.css"
+  extra_js:
+    - "/localsite/js/localsite.js?showheader=true&showsearch=false"
