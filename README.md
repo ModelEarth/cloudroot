@@ -7,6 +7,7 @@ On cloud.model.earth:
 - [Project Engine](https://cloud.model.earth/requests/engine/) ([/requests/engine](requests/engine/)): LLM interface
 - [Account](https://cloud.model.earth/auth/): sign-in, optional.
 - [Keys](https://cloud.model.earth/keys/): LLM keys, kept in your browser.
+- [Key store for local scripts](https://github.com/ModelEarth/realitystream/blob/main/api/keystore.md): keep tokens in your OS credential store instead of a plaintext .env, read one name at a time.
 
 ## Contributing from a fork
 
