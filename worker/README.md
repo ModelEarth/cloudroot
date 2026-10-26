@@ -44,6 +44,7 @@ code; every other path is served straight from the files.
 | `GET /api/auth/configured-providers`, `/api/auth/db-status` | Which social providers are set up; database status | `src/auth/` |
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
 | `GET /api/cms/auth`, `/api/cms/callback` | GitHub sign-in popup for Sveltia CMS and localsite's content tools (needs `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET`) | `src/cms-auth.js` |
+| `GET /api/cms/status` | `{"github": true}` once that sign-in is set up; readable from any origin | `src/cms-auth.js` |
 | `GET /api/health`, `/api/models`; `POST /api/generate/text`, `image`, `video`, `3d`; `GET /api/generate/video/:id`; `POST /api/upload/tripo`; `GET /api/proxy/model` | Arts Engine API, using the visitor's own keys | `requests/engine/worker/engine.js` |
 | `POST /ingest/:WEBHOOK_SECRET` | Transcript webhook from the TranscripTonic extension: opens a PR in `ARCHIVIST_REPO` (needs `WEBHOOK_SECRET`, `ARCHIVIST_TOKEN`) | `tonic/src/` (submodule; only its README page is published) |
 
@@ -89,6 +90,10 @@ It uses its own GitHub OAuth app, `CMS_GITHUB_CLIENT_ID` /
 `https://cloud.model.earth/api/cms/callback`. GitHub's authorization page
 shows that app's name ("Authorize Model Earth CMS"). The token is only posted
 to this origin or one in `ALLOWED_ORIGINS`.
+
+`GET /api/cms/status` returns `{"github": true}` once both values are set, and
+`false` until then. It sends `Access-Control-Allow-Origin: *`, so
+`localsite/edit/` on any site can check it on load and offer its setup steps.
 
 ### Password hashing in Postgres
 

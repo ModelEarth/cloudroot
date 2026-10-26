@@ -8,6 +8,9 @@
 //   GET /api/cms/callback?code=...&state=...
 //       Exchanges the code for a token, then returns a page that posts
 //       "authorization:github:success:{token}" to the window that opened it.
+//   GET /api/cms/status
+//       {"github": true} once the OAuth app's client id and secret are set, so
+//       a page can show its setup steps before anyone tries to sign in.
 //
 // GitHub's "Authorize <name>" page shows the OAuth app's registered name, so
 // register the app as e.g. "Model Earth CMS" (automation/README.md). Its
@@ -17,7 +20,7 @@
 // The token is only posted to this origin or one listed in ALLOWED_ORIGINS,
 // so another site can't open the popup and collect a visitor's token.
 
-import { allowedOrigins, configuredValue } from "./http.js";
+import { allowedOrigins, configuredValue, json } from "./http.js";
 
 const STATE_COOKIE = "cms_oauth_state";
 // Scopes a page may request. public_repo covers forking DesktopFolders/content
@@ -26,18 +29,27 @@ const ALLOWED_SCOPES = new Set(["repo", "public_repo", "read:user", "user:email"
 const DEFAULT_SCOPE = "public_repo";
 
 export function isCmsAuthPath(path) {
-  return path === "/api/cms/auth" || path === "/api/cms/callback";
+  return path === "/api/cms/auth" || path === "/api/cms/callback" || path === "/api/cms/status";
 }
 
 export async function handleCmsAuth(request, env, url) {
   if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
   const clientId = configuredValue(env, "CMS_GITHUB_CLIENT_ID");
   const clientSecret = configuredValue(env, "CMS_GITHUB_CLIENT_SECRET");
+  if (url.pathname === "/api/cms/status") return cmsStatus(!!(clientId && clientSecret));
   if (!clientId || !clientSecret) {
     return handshakePage(env, url, { error: "GitHub sign-in for the CMS isn't set up on this server.", errorCode: "MISCONFIGURED_CLIENT" });
   }
   if (url.pathname === "/api/cms/auth") return startAuth(url, clientId);
   return finishAuth(request, env, url, clientId, clientSecret);
+}
+
+// Whether sign-in is set up isn't private, so any site's page may read it.
+function cmsStatus(github) {
+  const response = json({ github });
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set("Cache-Control", "no-store");
+  return response;
 }
 
 function startAuth(url, clientId) {

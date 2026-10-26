@@ -12,6 +12,7 @@
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
  *   GET  /api/cms/auth, /api/cms/callback  GitHub sign-in for Sveltia CMS (cms-auth.js)
+ *   GET  /api/cms/status                Whether that sign-in is set up (cms-auth.js)
  *   /api/health, /api/models, /api/generate/*, /api/upload/tripo,
  *   /api/proxy/model                    Arts Engine (requests/engine/worker/engine.js)
  *
