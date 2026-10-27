@@ -22,6 +22,14 @@ sites:
     base_url: "https://model.earth"
     logo: "https://model.earth/localsite/img/logo/modelearth/model-earth.png"
     favicon: "/localsite/img/logo/modelearth/model-earth.png"
+  neighborhood.org:
+    title: "Neighborhood"
+    base_url: "https://neighborhood.org"
+    domain_contains: "neighborhood.org"
+    favicon: "/localsite/img/logo/neighborhood/favicon.png"
+    # The earth icon in the header in place of the logo, left of the site title (localsite/js/navigation.js)
+    header_icon: earth
+    visibility: "local"
   maestro:
     title: "Maestro"
     base_url: "https://neighborhood.org"

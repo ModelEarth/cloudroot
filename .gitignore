@@ -4,6 +4,7 @@
 bin
 paths.yaml
 data-pipeline
+community
 community-data
 docker
 safe
