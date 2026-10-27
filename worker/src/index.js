@@ -15,6 +15,8 @@
  *   GET  /api/cms/status                Whether that sign-in is set up (cms-auth.js)
  *   /api/health, /api/models, /api/generate/*, /api/upload/tripo,
  *   /api/proxy/model                    Arts Engine (requests/engine/worker/engine.js)
+ *   /api/goals/*                        Project Goals MCP server and data API
+ *                                       (project/goals/worker/src/index.js)
  *
  * Transcript intake: POST /ingest/<WEBHOOK_SECRET> from the TranscripTonic
  * extension opens a PR in ARCHIVIST_REPO (the tonic submodule, tonic/src).
@@ -32,6 +34,9 @@ import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
 import { handleEngine, isEnginePath } from "../../requests/engine/worker/engine.js";
 // The tonic submodule's Worker, run here instead of deployed on its own.
 import tonic from "../../tonic/src/index.js";
+// The project submodule's goals Worker, mounted at /api/goals. It sets its own
+// open CORS headers (a public, read-only API and MCP endpoint).
+import { handleGoals, isGoalsPath, MOUNT as GOALS } from "../../project/goals/worker/src/index.js";
 import { corsHeaders, json, withCors } from "./http.js";
 
 async function routeApi(request, env, ctx, url) {
@@ -73,6 +78,9 @@ export default {
     if (url.pathname.startsWith("/ingest/")) return tonic.fetch(request, env);
     if (url.pathname === "/auth" || url.pathname.startsWith("/auth/")) return serveAuthExport(request, env, url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    if (isGoalsPath(url.pathname)) {
+      return handleGoals(request, { ...env, DATA_PREFIX: "/project/goals", MODELS_PREFIX: "/project/models", PROFILE: env.GOALS_PROFILE || "veterans" }, ctx, GOALS);
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(request, env) });

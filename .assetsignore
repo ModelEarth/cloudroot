@@ -38,6 +38,14 @@ appsettings*.json
 /AGENTS.md
 /CLAUDE.md
 
+# Too large for Workers assets (138,000+ files, some over the 25 MiB limit)
+/community-data
+
+# Python virtual environments, at any depth (e.g. data-pipeline's per-node env folders)
+env/
+venv/
+.venv/
+
 # auth is a Next.js app, so only its static export (auth/out, made by
 # `pnpm build` in auth/) is published. The Worker serves it at /auth/.
 /auth/*
@@ -62,3 +70,11 @@ appsettings*.json
 !/support/site
 /support/site/*
 !/support/site/config.yaml
+
+# project/goals: download cache, full pipeline outputs and Worker source
+# (served through /api/goals instead), and model run folders.
+/project/goals/pipeline/cache
+/project/goals/data/records
+/project/goals/worker
+/project/models/report*
+/project/models/params

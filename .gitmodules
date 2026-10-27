@@ -26,6 +26,14 @@
 	path = localsite
 	url = https://github.com/ModelEarth/localsite
 	branch = main
+[submodule "profile"]
+	path = profile
+	url = https://github.com/ModelEarth/profile
+	branch = main
+[submodule "project"]
+	path = project
+	url = https://github.com/ModelEarth/project
+	branch = main
 [submodule "realitystream"]
 	path = realitystream
 	url = https://github.com/ModelEarth/realitystream

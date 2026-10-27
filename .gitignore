@@ -3,6 +3,8 @@
 .env.local
 bin
 paths.yaml
+data-pipeline
+community-data
 docker
 safe
 
@@ -16,3 +18,6 @@ env/*
 *.env
 env
 .envrc
+
+# Local-only top-level folders
+/*t-m*/

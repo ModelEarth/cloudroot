@@ -12,11 +12,12 @@
 // .assetsignore. Watching the webroot would include chat/ and worker/
 // (node_modules, and wrangler's own .wrangler/ output, which reloads it
 // endlessly). So locally it's given worker/.wrangler/webroot instead: links to
-// the webroot's top-level entries, minus those .assetsignore leaves out whole.
-// Edits show up on reload, with no build step.
+// the webroot's top-level entries, minus those .assetsignore leaves out whole
+// and any Python virtual environments inside them. Edits show up on reload,
+// with no build step.
 
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -61,6 +62,34 @@ function leftOutEntries() {
   return new Set([...ignore.matchAll(/^\/([^/*!\s]+)\s*$/gm)].map((match) => match[1]));
 }
 
+// Python virtual environments, e.g. data-pipeline's per-node env folders.
+// .assetsignore keeps them off the site, but wrangler would still watch their
+// thousands of files, which stops it from starting (spawn EBADF).
+const VENV_DIRS = new Set(["env", "venv", ".venv"]);
+
+function hasVenv(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === "node_modules" || entry.name === ".git") continue;
+    if (VENV_DIRS.has(entry.name) || hasVenv(join(dir, entry.name))) return true;
+  }
+  return false;
+}
+
+// Links src at dest. A folder holding a virtual environment is recreated with
+// links to its other entries instead, so files added later directly inside
+// that folder need a restart to show up.
+function linkWithoutVenvs(src, dest) {
+  if (!statSync(src).isDirectory() || !hasVenv(src)) {
+    symlinkSync(src, dest);
+    return;
+  }
+  mkdirSync(dest);
+  for (const entry of readdirSync(src, { withFileTypes: true })) {
+    if (entry.isDirectory() && VENV_DIRS.has(entry.name)) continue;
+    linkWithoutVenvs(join(src, entry.name), join(dest, entry.name));
+  }
+}
+
 function linkWebroot() {
   const dir = join(WORKER_DIR, ".wrangler", "webroot");
   rmSync(dir, { recursive: true, force: true });
@@ -75,7 +104,7 @@ function linkWebroot() {
       else console.log("[dev] auth/out is missing, so /auth/ is empty. Build it: cd auth && pnpm install && pnpm build");
       continue;
     }
-    symlinkSync(join(WEBROOT, name), join(dir, name));
+    linkWithoutVenvs(join(WEBROOT, name), join(dir, name));
   }
   return dir;
 }
