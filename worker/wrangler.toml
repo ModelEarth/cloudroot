@@ -3,11 +3,14 @@ main = "src/index.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# The website and its API on one origin: https://cloud.model.earth
-# (and https://cloudroot.<subdomain>.workers.dev).
+# The website and its API, each domain its own origin: https://cloud.model.earth
+# and https://neighborhood.org (and https://cloudroot.<subdomain>.workers.dev).
+# Every deploy makes the Worker's custom domains match this list, so a domain
+# added only in the Cloudflare dashboard is removed on the next push to main.
 workers_dev = true
 routes = [
   { pattern = "cloud.model.earth", custom_domain = true },
+  { pattern = "neighborhood.org", custom_domain = true },
 ]
 
 # Static files: the webroot itself (this folder's parent), minus what
