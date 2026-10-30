@@ -8,6 +8,7 @@ community
 community-data
 docker
 safe
+veil
 
 # Auth keys and secrets
 *.key
