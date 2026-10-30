@@ -78,3 +78,7 @@ venv/
 /project/goals/worker
 /project/models/report*
 /project/models/params
+
+# engine's local voice bridge (node engine/server/local-bridge.mjs): the page script
+# engine/claude-voice.js is published, its server isn't.
+/engine/server

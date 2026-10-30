@@ -8,6 +8,10 @@
 
 default: model.earth
 
+# The voice widget on pages with #fullscreen (engine, project/goals): talk to Claude there, with
+# its controls in the lower right of #fullscreen (initFullscreenVoice() in localsite/js/localsite.js).
+fullscreenVoice: /engine/claude-voice.js
+
 auth:
   plugin_url_development: /auth/js/auth-plugin.js
   modal_url_development: /auth/js/auth-modal.js
