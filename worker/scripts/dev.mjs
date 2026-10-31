@@ -32,7 +32,7 @@ const KEYS = [
   "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
   "MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET", "LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET",
   "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "FACEBOOK_CLIENT_ID", "FACEBOOK_CLIENT_SECRET",
-  "GEMINI_API_KEY", "ARTS_ENGINE_PASSPHRASE", "WEBHOOK_SECRET", "ARCHIVIST_TOKEN",
+  "GEMINI_API_KEY", "ARTS_ENGINE_PASSPHRASE", "TEAM_PASSPHRASE", "WEBHOOK_SECRET", "ARCHIVIST_TOKEN",
   "CMS_GITHUB_CLIENT_ID", "CMS_GITHUB_CLIENT_SECRET",
   // The Veil (veil/code, src/veil.js)
   "GAME_STATE_SECRET", "NVIDIA_API_KEY", "NVIDIA_IMAGE_KEY", "NVIDIACosmos", "FAL_KEY", "BLOB_READ_WRITE_TOKEN",
@@ -48,7 +48,7 @@ function envFilePath() {
 function readEnvFile(path) {
   const values = {};
   for (const line of readFileSync(path, "utf8").split("\n")) {
-    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
+    const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)$/); // NVIDIACosmos has lowercase letters
     if (!match) continue;
     let value = match[2].trim();
     if (/^["']/.test(value)) value = value.slice(1, value.indexOf(value[0], 1));

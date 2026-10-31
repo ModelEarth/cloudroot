@@ -7,7 +7,9 @@
  * matches, in which case they're handed back to the static files for a 404.
  *
  * API:
- *   POST /api/chat                      LLM proxy (chat.js)
+ *   POST /api/chat                      LLM proxy (chat.js), for visitors who enter TEAM_PASSPHRASE
+ *   POST /api/claude-voice              The voice widget (engine/claude-voice.js), answered with
+ *                                       ANTHROPIC_API_KEY for visitors who enter TEAM_PASSPHRASE
  *   GET  /api/key-status, /api/server-keys, /api/public-key
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
@@ -29,6 +31,7 @@
 
 import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey } from "./keys.js";
+import { handleClaudeVoice, CLAUDE_VOICE_PATH } from "../../engine/worker/claude-voice-api.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
 import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
 // Kept in the requests submodule beside the engine's Rust backend (rust-api),
@@ -49,6 +52,8 @@ async function routeApi(request, env, ctx, url) {
   const isGet = request.method === "GET";
 
   if (path === "/api/chat") return handleChat(request, env);
+  // Off until the TEAM_PASSPHRASE secret is set, so the API key isn't open to everyone (engine/shared/passphrase.js).
+  if (path === CLAUDE_VOICE_PATH) return handleClaudeVoice(request, env, ctx, { passphrase: true });
   if ((path === "/api/key-status" || path === "/api/server-keys") && isGet) return handleKeyStatus(env);
   if (path === "/api/public-key" && isGet) return handlePublicKey(env);
   if (path === "/api/validate-key") return handleValidateKey(request, env);

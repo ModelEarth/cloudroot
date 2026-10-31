@@ -20,7 +20,8 @@ export function corsHeaders(request, env) {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     // X-Provider-*: the visitor's own LLM key, sent by the Arts Engine page.
-    "Access-Control-Allow-Headers": "Content-Type, X-Provider-Name, X-Provider-Key, X-Provider-URL",
+    // X-Team-Passphrase: the team's passphrase (TEAM_PASSPHRASE), sent by the voice widget (engine/claude-voice.js).
+    "Access-Control-Allow-Headers": "Content-Type, X-Provider-Name, X-Provider-Key, X-Provider-URL, X-Team-Passphrase",
     Vary: "Origin",
   };
 }

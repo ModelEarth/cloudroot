@@ -4,7 +4,9 @@
  * Frontend JS calls this Worker (never the LLM provider directly).
  * The Worker holds the API keys as Cloudflare secrets and picks the
  * model/provider based on the request body, so the frontend can switch
- * between Claude, OpenAI, etc. without ever seeing a key.
+ * between Claude, OpenAI, etc. without ever seeing a key. Those keys are the
+ * site's own, so a request needs the team's passphrase (TEAM_PASSPHRASE) in
+ * the X-Team-Passphrase header; until that secret is set, this replies 503.
  *
  * POST /api/chat
  * Body: {
@@ -18,6 +20,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { configuredValue, json } from "./http.js";
+import { passphraseRefusal } from "../../engine/shared/passphrase.js";
 
 // Provider id -> the env binding that holds its secret. Only providers this
 // Worker actually proxies (see getModel() below) belong here — the "keys"
@@ -61,6 +64,8 @@ export async function handleChat(request, env) {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+  const refusal = await passphraseRefusal(request, env, { required: true, to: "use the site's AI keys" });
+  if (refusal) return json({ error: refusal.error, passphrase: refusal.passphrase }, refusal.status);
 
   try {
     const { provider = "anthropic", model, messages } = await request.json();

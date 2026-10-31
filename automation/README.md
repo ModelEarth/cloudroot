@@ -57,6 +57,25 @@ to GitHub through the Worker's `/api/cms/*` routes
    `auth_endpoint: "api/cms/auth"`. Until then the CMS signs in through
    Netlify's default service, whose popup reads "Authorize Netlify CMS".
 
+## `set-env-keys.mjs`
+
+Puts keys into the local env file without showing their values, so it's
+safe to run where others (or an agent) can see the terminal. Only key names
+are printed. By default it asks for The Veil's keys: `GAME_STATE_SECRET`,
+`NVIDIA_API_KEY`, `NVIDIA_IMAGE_KEY`, `NVIDIACosmos`, `FAL_KEY` and
+`BLOB_READ_WRITE_TOKEN`.
+
+```bash
+node automation/set-env-keys.mjs                      # hidden prompts; Enter keeps a value
+node automation/set-env-keys.mjs --from veil.env      # copy them from another env file
+node automation/set-env-keys.mjs KEY_A KEY_B          # other keys
+```
+
+For `--from`, `vercel env pull veil.env` in The Veil's Vercel project
+writes such a file (delete it afterwards). A value with a space, quote or
+`#` is skipped, since the env file's readers handle those differently.
+Then run `./automation/sync-config.sh` to store the keys as GitHub secrets.
+
 ## `sync-config.sh`
 
 Copies the Cloudflare Worker's config values from a local env file into a

@@ -38,6 +38,9 @@ const HANDLERS = {
   illustrate, library, progress, "scene-art": sceneArt, store, trailer,
 };
 
+// The environment names the game reads (veil/code/api, veil/code/lib).
+const GAME_ENV = /^(GAME_STATE_SECRET|NVIDIA|FAL_|BLOB_READ_WRITE_TOKEN$|COSMOS_|IMAGE_|FILM_)/;
+
 // Vercel's limit on a function's request body.
 const MAX_BODY = 4.5 * 1024 * 1024;
 
@@ -60,9 +63,10 @@ export async function handleVeil(request, env, ctx, url) {
   const handler = HANDLERS[url.pathname.slice(VEIL_API.length)];
   if (!handler) return Response.json({ error: `No API at ${url.pathname}` }, { status: 404 });
 
-  // The game's keys (NVIDIA_API_KEY, FAL_KEY, BLOB_READ_WRITE_TOKEN, GAME_STATE_SECRET, ...).
+  // The game's own keys and settings only (NVIDIA_API_KEY, FAL_KEY, BLOB_READ_WRITE_TOKEN, GAME_STATE_SECRET, ...).
+  // Not the site's other secrets: with OPENAI_API_KEY, every player would spend the site's OpenAI key.
   for (const [name, value] of Object.entries(env)) {
-    if (typeof value === "string") process.env[name] = value;
+    if (typeof value === "string" && GAME_ENV.test(name)) process.env[name] = value;
   }
 
   let body;

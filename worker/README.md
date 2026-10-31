@@ -36,7 +36,8 @@ code; every other path is served straight from the files.
 
 | Path | Purpose | Source |
 |---|---|---|
-| `POST /api/chat` | LLM proxy (Anthropic, OpenAI) | `src/chat.js` |
+| `POST /api/chat` | LLM proxy (Anthropic, OpenAI), with the team passphrase | `src/chat.js` |
+| `POST /api/claude-voice` | The voice widget, with the team passphrase | `engine/worker/claude-voice-api.js` |
 | `GET /api/key-status`, `/api/server-keys` | Which provider keys the Worker holds (ids only) | `src/keys.js` |
 | `GET /api/public-key` | Public JWK of `BROWSER_ENCRYPTION_PRIVATE_KEY` (404 when unset) | `src/keys.js` |
 | `POST /api/validate-key` | Checks a provider key against the provider's API | `src/keys.js` |
@@ -60,6 +61,18 @@ Worker's `GEMINI_API_KEY` instead. Both are synced from the env file by
 `automation/sync-config.sh`. `/api/save-file` (localsite's Markdown
 editor) writes to local disk, so it stays local-only; on Cloudflare it
 returns 404 and the editor falls back to copying to the clipboard.
+
+`/api/chat` and `/api/claude-voice` spend the site's own LLM keys, so
+each request needs the `TEAM_PASSPHRASE` secret (12+ characters) in the
+`X-Team-Passphrase` header (`engine/shared/passphrase.js`). Without it
+they reply 401; until the secret is set, 503. The voice widget
+(`engine/claude-voice.js`) asks for it once and keeps it in the
+browser's localStorage as `team-passphrase`, for every tab on that
+site, where other pages can read it too. Locally the widget uses the
+Claude Code CLI bridge (`engine/server/local-bridge.mjs`) instead.
+
+The Veil's API gets only the game's own keys (`GAME_ENV` in
+`src/veil.js`), not the site's other secrets such as `OPENAI_API_KEY`.
 
 ## Sign-in
 
@@ -156,7 +169,8 @@ overwritten.
 
 | Worker secret | GitHub secret | Needed for |
 |---|---|---|
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | same | `/api/chat` |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | same | `/api/chat` (`ANTHROPIC_API_KEY` also `/api/claude-voice`) |
+| `TEAM_PASSPHRASE` | same | `/api/chat`, `/api/claude-voice` (12+ chars) |
 | `BETTER_AUTH_SECRET` | same | all sign-in (min 32 chars) |
 | `POSTGRES_URL` | same | email/password sign-in, stored users |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub sign-in (GitHub reserves the `GITHUB_` prefix) |
@@ -230,8 +244,9 @@ gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/CloudRoot --body $token
 can't claim `cloud.model.earth`: delete the `routes` line in
 `wrangler.toml` and use the `workers.dev` URL.
 
-The Cloudflare credentials alone are enough to deploy. Without LLM keys,
-`/api/chat` returns `{"error":"ANTHROPIC_API_KEY not configured"}`; without
+The Cloudflare credentials alone are enough to deploy. Without
+`TEAM_PASSPHRASE`, `/api/chat` returns 503; without LLM keys,
+`{"error":"ANTHROPIC_API_KEY not configured"}`; without
 `BETTER_AUTH_SECRET`, `/api/auth/*` returns 503.
 
 ## Adding more LLM providers
