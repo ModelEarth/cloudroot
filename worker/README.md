@@ -71,6 +71,14 @@ browser's localStorage as `team-passphrase`, for every tab on that
 site, where other pages can read it too. Locally the widget uses the
 Claude Code CLI bridge (`engine/server/local-bridge.mjs`) instead.
 
+`/api/claude-voice` answers with Claude, then `GEMINI_API_KEY` when
+Claude can't (invalid key, no credits, busy), and says why on the page.
+When both fail, or a visitor has no passphrase, the widget uses a Claude
+or Gemini key the visitor saved on `/keys/` in that browser, sent in the
+`X-Provider-Name` / `X-Provider-Key` headers. Those requests need no
+passphrase, since they don't spend the site's keys. Without a saved key,
+the page says one can be added there.
+
 The Veil's API gets only the game's own keys (`GAME_ENV` in
 `src/veil.js`), not the site's other secrets such as `OPENAI_API_KEY`.
 
