@@ -17,6 +17,8 @@
  *   /api/proxy/model                    Arts Engine (requests/engine/worker/engine.js)
  *   /api/goals/*                        Project Goals MCP server and data API
  *                                       (project/goals/worker/src/index.js)
+ *   /veil/code/api/*                    The Veil game (veil/code), run from its Vercel
+ *                                       functions (veil.js), when veil is in the webroot
  *
  * Transcript intake: POST /ingest/<WEBHOOK_SECRET> from the TranscripTonic
  * extension opens a PR in ARCHIVIST_REPO (the tonic submodule, tonic/src).
@@ -37,6 +39,9 @@ import tonic from "../../tonic/src/index.js";
 // The project submodule's goals Worker, mounted at /api/goals. It sets its own
 // open CORS headers (a public, read-only API and MCP endpoint).
 import { handleGoals, isGoalsPath, MOUNT as GOALS } from "../../project/goals/worker/src/index.js";
+// The Veil game (veil/code), served at /veil/code/ with its API at /veil/code/api/*,
+// when veil is in the webroot. veil-mount.js is written by scripts/veil-mount.mjs.
+import { handleVeil, isVeilPath } from "./veil-mount.js";
 import { corsHeaders, json, withCors } from "./http.js";
 
 async function routeApi(request, env, ctx, url) {
@@ -77,6 +82,7 @@ export default {
 
     if (url.pathname.startsWith("/ingest/")) return tonic.fetch(request, env);
     if (url.pathname === "/auth" || url.pathname.startsWith("/auth/")) return serveAuthExport(request, env, url);
+    if (isVeilPath(url.pathname)) return handleVeil(request, env, ctx, url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
     if (isGoalsPath(url.pathname)) {
       return handleGoals(request, { ...env, DATA_PREFIX: "/project/goals", MODELS_PREFIX: "/project/models", PROFILE: env.GOALS_PROFILE || "veterans" }, ctx, GOALS);

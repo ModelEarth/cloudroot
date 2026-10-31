@@ -43,6 +43,24 @@ jobs:
         working-directory: worker
         run: npm ci
 
+      # The Veil (veil/code) is its own private repo, not a submodule, so it stays out of
+      # this public one. With a VEIL_REPO_TOKEN secret (a token that can read
+      # DesktopFolders/veil), it's cloned into veil/ and the Worker serves it at
+      # /veil/code/. Without one, the Worker deploys without it (worker/scripts/veil-mount.mjs).
+      # (A step's `if` can't read secrets, so this step says whether it's set.)
+      - name: Look for The Veil's token
+        id: veil
+        run: echo "token=${{ secrets.VEIL_REPO_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out The Veil
+        if: steps.veil.outputs.token == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: DesktopFolders/veil
+          token: ${{ secrets.VEIL_REPO_TOKEN }}
+          path: veil
+          persist-credentials: false
+
       # GitHub secrets -> Worker secrets, uploaded with the new version.
       # Unset or empty GitHub secrets are skipped, so a value set directly in
       # Cloudflare (wrangler secret put) isn't overwritten with a blank.
@@ -65,7 +83,8 @@ jobs:
             MICROSOFT_CLIENT_ID MICROSOFT_CLIENT_SECRET LINKEDIN_CLIENT_ID LINKEDIN_CLIENT_SECRET \
             DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET \
             GEMINI_API_KEY ARTS_ENGINE_PASSPHRASE WEBHOOK_SECRET ARCHIVIST_TOKEN \
-            CMS_GITHUB_CLIENT_ID CMS_GITHUB_CLIENT_SECRET
+            CMS_GITHUB_CLIENT_ID CMS_GITHUB_CLIENT_SECRET \
+            GAME_STATE_SECRET NVIDIA_API_KEY NVIDIA_IMAGE_KEY NVIDIACosmos FAL_KEY BLOB_READ_WRITE_TOKEN
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -90,6 +109,14 @@ jobs:
           ARCHIVIST_TOKEN: ${{ secrets.ARCHIVIST_TOKEN }}
           CMS_GITHUB_CLIENT_ID: ${{ secrets.CMS_GITHUB_CLIENT_ID }}
           CMS_GITHUB_CLIENT_SECRET: ${{ secrets.CMS_GITHUB_CLIENT_SECRET }}
+          # The Veil (veil/code, worker/src/veil.js). BLOB_READ_WRITE_TOKEN is the Vercel Blob
+          # store the game's Vercel deployment uses, so both share one media and case library.
+          GAME_STATE_SECRET: ${{ secrets.GAME_STATE_SECRET }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          NVIDIA_IMAGE_KEY: ${{ secrets.NVIDIA_IMAGE_KEY }}
+          NVIDIACosmos: ${{ secrets.NVIDIACOSMOS }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
 
       - name: Deploy Worker
         working-directory: worker

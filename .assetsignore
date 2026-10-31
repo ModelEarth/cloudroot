@@ -82,3 +82,16 @@ venv/
 # engine's local voice bridge (node engine/server/local-bridge.mjs): the page script
 # engine/claude-voice.js is published, its server isn't.
 /engine/server
+
+# veil/code (The Veil game) is published at /veil/code/, with its API run by the Worker at
+# /veil/code/api/* (worker/src/veil.js). As on Vercel (veil/code/vercel.json), its server code,
+# sealed story files and docs aren't: of lib/ the page loads only finale.js.
+/veil/code/api
+/veil/code/private
+/veil/code/tests
+/veil/code/package*.json
+/veil/code/vercel.json
+/veil/code/lib/*
+!/veil/code/lib/finale.js
+/veil/**/*.md
+/veil/how-it-was-made

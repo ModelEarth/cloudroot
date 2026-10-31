@@ -19,3 +19,6 @@ yarn-error.log*
 .DS_Store
 .vscode/
 *.log
+
+# Written by scripts/veil-mount.mjs
+src/veil-mount.js
