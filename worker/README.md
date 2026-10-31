@@ -73,9 +73,10 @@ Claude Code CLI bridge (`engine/server/local-bridge.mjs`) instead.
 
 `/api/claude-voice` answers with Claude, then `GEMINI_API_KEY` when
 Claude can't (invalid key, no credits, busy), and says why on the page.
-When both fail, or a visitor has no passphrase, the widget uses a Claude
-or Gemini key the visitor saved on `/keys/` in that browser, sent in the
-`X-Provider-Name` / `X-Provider-Key` headers. Those requests need no
+When both fail, or a visitor has no passphrase, the widget uses an AI key
+the visitor saved on `/keys/` in that browser (Claude, Gemini, OpenAI,
+xAI, Groq, Perplexity or Pollinations, trying the next one if one fails),
+sent in the `X-Provider-Name` / `X-Provider-Key` headers. Those requests need no
 passphrase, since they don't spend the site's keys. Without a saved key,
 the page says one can be added there.
 
