@@ -36,6 +36,8 @@ const KEYS = [
   "CMS_GITHUB_CLIENT_ID", "CMS_GITHUB_CLIENT_SECRET",
   // The Veil (veil/code, src/veil.js)
   "GAME_STATE_SECRET", "NVIDIA_API_KEY", "NVIDIA_IMAGE_KEY", "NVIDIACosmos", "FAL_KEY", "BLOB_READ_WRITE_TOKEN",
+  // The voice widget's GitHub access: reading the site's code, and pull requests on The Veil (src/site-code.js)
+  "VEIL_REPO_TOKEN",
 ];
 
 function envFilePath() {

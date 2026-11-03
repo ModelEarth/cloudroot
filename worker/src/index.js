@@ -9,7 +9,9 @@
  * API:
  *   POST /api/chat                      LLM proxy (chat.js), for visitors who enter TEAM_PASSPHRASE
  *   POST /api/claude-voice              The voice widget (engine/claude-voice.js), answered with
- *                                       ANTHROPIC_API_KEY for visitors who enter TEAM_PASSPHRASE
+ *                                       ANTHROPIC_API_KEY for visitors who enter TEAM_PASSPHRASE,
+ *                                       who can also ask about the site's code (read from GitHub)
+ *                                       and have Claude open pull requests on The Veil (site-code.js)
  *   GET  /api/key-status, /api/server-keys, /api/public-key
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
@@ -32,6 +34,7 @@
 import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey } from "./keys.js";
 import { handleClaudeVoice, CLAUDE_VOICE_PATH } from "../../engine/worker/claude-voice-api.js";
+import { siteCodeTools } from "./site-code.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
 import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
 // Kept in the requests submodule beside the engine's Rust backend (rust-api),
@@ -53,7 +56,8 @@ async function routeApi(request, env, ctx, url) {
 
   if (path === "/api/chat") return handleChat(request, env);
   // Off until the TEAM_PASSPHRASE secret is set, so the API key isn't open to everyone (engine/shared/passphrase.js).
-  if (path === CLAUDE_VOICE_PATH) return handleClaudeVoice(request, env, ctx, { passphrase: true });
+  // With the passphrase, Claude can read the site's code from GitHub and open pull requests on The Veil.
+  if (path === CLAUDE_VOICE_PATH) return handleClaudeVoice(request, env, ctx, { passphrase: true, tools: siteCodeTools });
   if ((path === "/api/key-status" || path === "/api/server-keys") && isGet) return handleKeyStatus(env);
   if (path === "/api/public-key" && isGet) return handlePublicKey(env);
   if (path === "/api/validate-key") return handleValidateKey(request, env);

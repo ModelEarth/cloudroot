@@ -84,7 +84,7 @@ jobs:
             DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET FACEBOOK_CLIENT_ID FACEBOOK_CLIENT_SECRET \
             GEMINI_API_KEY ARTS_ENGINE_PASSPHRASE TEAM_PASSPHRASE WEBHOOK_SECRET ARCHIVIST_TOKEN \
             CMS_GITHUB_CLIENT_ID CMS_GITHUB_CLIENT_SECRET \
-            GAME_STATE_SECRET NVIDIA_API_KEY NVIDIA_IMAGE_KEY NVIDIACosmos FAL_KEY BLOB_READ_WRITE_TOKEN
+            GAME_STATE_SECRET NVIDIA_API_KEY NVIDIA_IMAGE_KEY NVIDIACosmos FAL_KEY BLOB_READ_WRITE_TOKEN VEIL_REPO_TOKEN
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -119,6 +119,9 @@ jobs:
           NVIDIACosmos: ${{ secrets.NVIDIACOSMOS }}
           FAL_KEY: ${{ secrets.FAL_KEY }}
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          # Also the voice widget's GitHub access (worker/src/site-code.js): it reads the site's code, and opens
+          # pull requests on DesktopFolders/veil when the token has Contents and Pull requests write there.
+          VEIL_REPO_TOKEN: ${{ secrets.VEIL_REPO_TOKEN }}
 
       - name: Deploy Worker
         working-directory: worker

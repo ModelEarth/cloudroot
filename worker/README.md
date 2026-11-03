@@ -80,6 +80,20 @@ sent in the `X-Provider-Name` / `X-Provider-Key` headers. Those requests need no
 passphrase, since they don't spend the site's keys. Without a saved key,
 the page says one can be added there.
 
+With the passphrase, Claude in the voice widget can also look at the
+site's code, which it reads from GitHub since the Worker has no files of
+its own to read (`src/site-code.js`). Paths are as on the site:
+`veil/...` is the DesktopFolders/veil repo, a submodule's folder is its
+repo (from `.gitmodules`), and the rest is CloudRoot. Asked for a change
+under `veil/`, it opens a pull request on a new branch of
+DesktopFolders/veil, which changes nothing until someone merges it. Both
+use the `VEIL_REPO_TOKEN` secret, the token the deploy clones The Veil
+with: reading The Veil needs it, and pull requests need it to have
+Contents and Pull requests read and write on DesktopFolders/veil.
+Without a token, only the public repos can be read, and GitHub allows
+60 calls an hour. A visitor using their own Claude key gets the same
+tools if they've also entered the passphrase.
+
 The Veil's API gets only the game's own keys (`GAME_ENV` in
 `src/veil.js`), not the site's other secrets such as `OPENAI_API_KEY`.
 
@@ -186,6 +200,7 @@ overwritten.
 | `GOOGLE_`, `MICROSOFT_`, `LINKEDIN_`, `DISCORD_`, `FACEBOOK_` + `CLIENT_ID` / `CLIENT_SECRET` | same | each social provider |
 | `BROWSER_ENCRYPTION_PRIVATE_KEY` | same | `/api/public-key` |
 | `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET` | same | `/api/cms/*`, the CMS's GitHub sign-in |
+| `VEIL_REPO_TOKEN` | same | the voice widget reading the site's code and opening pull requests on DesktopFolders/veil (also clones The Veil in the deploy) |
 
 The deploy itself needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 The token needs Workers Scripts edit, plus Workers Routes and DNS edit on the
