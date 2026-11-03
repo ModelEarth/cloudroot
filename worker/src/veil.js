@@ -44,6 +44,12 @@ const GAME_ENV = /^(GAME_STATE_SECRET|NVIDIA|FAL_|BLOB_READ_WRITE_TOKEN$|COSMOS_
 // Vercel's limit on a function's request body.
 const MAX_BODY = 4.5 * 1024 * 1024;
 
+// The game's Vercel site, whose Vercel Blob store holds the trailer's videos and the scene pictures. Without a
+// BLOB_READ_WRITE_TOKEN here, these reads pass through to it (server to server, since it sends no CORS headers).
+const VEIL_VERCEL = "https://senarastoryenginev1cosmos.vercel.app";
+const FROM_VERCEL = new Set(["trailer", "scene-art"]);
+const PASSED_HEADERS = ["Content-Type", "Content-Length", "Cache-Control"];
+
 provideFiles({
   "private/bible.md": bible,
   "private/admins.txt": admins,
@@ -60,8 +66,15 @@ globalThis[Symbol.for("@vercel/request-context")] = { get: () => requestContext.
 export const isVeilPath = (path) => path.startsWith(VEIL_API);
 
 export async function handleVeil(request, env, ctx, url) {
-  const handler = HANDLERS[url.pathname.slice(VEIL_API.length)];
+  const name = url.pathname.slice(VEIL_API.length);
+  const handler = HANDLERS[name];
   if (!handler) return Response.json({ error: `No API at ${url.pathname}` }, { status: 404 });
+  if (request.method === "GET" && FROM_VERCEL.has(name) && !env.BLOB_READ_WRITE_TOKEN) {
+    const r = await fetch(`${VEIL_VERCEL}/api/${name}${url.search}`, { signal: request.signal });
+    const headers = new Headers();
+    for (const h of PASSED_HEADERS) if (r.headers.has(h)) headers.set(h, r.headers.get(h));
+    return new Response(r.body, { status: r.status, headers });
+  }
 
   // The game's own keys and settings only (NVIDIA_API_KEY, FAL_KEY, BLOB_READ_WRITE_TOKEN, GAME_STATE_SECRET, ...).
   // Not the site's other secrets: with OPENAI_API_KEY, every player would spend the site's OpenAI key.
