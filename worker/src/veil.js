@@ -45,7 +45,7 @@ const GAME_ENV = /^(GAME_STATE_SECRET|NVIDIA|FAL_|BLOB_READ_WRITE_TOKEN$|COSMOS_
 const MAX_BODY = 4.5 * 1024 * 1024;
 
 // The game's Vercel site, whose Vercel Blob store holds the trailer's videos and the scene pictures. Without a
-// BLOB_READ_WRITE_TOKEN here, these reads pass through to it (server to server, since it sends no CORS headers).
+// BLOB_READ_WRITE_TOKEN here (the site's or the visitor's), these reads pass through to it (server to server, since it sends no CORS headers).
 const VEIL_VERCEL = "https://senarastoryenginev1cosmos.vercel.app";
 const FROM_VERCEL = new Set(["trailer", "scene-art"]);
 const PASSED_HEADERS = ["Content-Type", "Content-Length", "Cache-Control"];
@@ -63,13 +63,30 @@ provideFiles({
 const requestContext = new AsyncLocalStorage();
 globalThis[Symbol.for("@vercel/request-context")] = { get: () => requestContext.getStore() };
 
+// The keys a visitor can give the game on the /keys page (Planet.Live: The Veil in keys/providers.js), sent by
+// veil/code/visitor-keys.js. The game reads them from process.env, which here answers from the request's own
+// context first, so one visitor's key never reaches another request running at the same time. Without one, the
+// site's secret (set from env in handleVeil) is used. (workerd doesn't allow getters on process.env itself.)
+const VISITOR_KEYS = { "x-veil-blob-token": "BLOB_READ_WRITE_TOKEN", "x-veil-fal-key": "FAL_KEY" };
+const siteEnv = process.env;
+const own = (name) => (typeof name === "string" ? requestContext.getStore()?.keys?.[name] : undefined);
+process.env = new Proxy(siteEnv, {
+  get: (target, name) => own(name) ?? target[name],
+  has: (target, name) => own(name) !== undefined || name in target,
+});
+
 export const isVeilPath = (path) => path.startsWith(VEIL_API);
 
 export async function handleVeil(request, env, ctx, url) {
   const name = url.pathname.slice(VEIL_API.length);
   const handler = HANDLERS[name];
   if (!handler) return Response.json({ error: `No API at ${url.pathname}` }, { status: 404 });
-  if (request.method === "GET" && FROM_VERCEL.has(name) && !env.BLOB_READ_WRITE_TOKEN) {
+  const keys = {};
+  for (const [header, envName] of Object.entries(VISITOR_KEYS)) {
+    const value = (request.headers.get(header) || "").trim();
+    if (value) keys[envName] = value;
+  }
+  if (request.method === "GET" && FROM_VERCEL.has(name) && !env.BLOB_READ_WRITE_TOKEN && !keys.BLOB_READ_WRITE_TOKEN) {
     const r = await fetch(`${VEIL_VERCEL}/api/${name}${url.search}`, { signal: request.signal });
     const headers = new Headers();
     for (const h of PASSED_HEADERS) if (r.headers.has(h)) headers.set(h, r.headers.get(h));
@@ -90,6 +107,7 @@ export async function handleVeil(request, env, ctx, url) {
     try { body = isJson && text ? JSON.parse(text) : text; } catch { return Response.json({ error: "Invalid JSON." }, { status: 400 }); }
   }
   const headers = Object.fromEntries(request.headers);
+  for (const header of Object.keys(VISITOR_KEYS)) delete headers[header];
   headers["x-forwarded-for"] ||= request.headers.get("CF-Connecting-IP") || "";
   const req = {
     method: request.method,
@@ -125,7 +143,7 @@ export async function handleVeil(request, env, ctx, url) {
   };
 
   try {
-    await requestContext.run({ waitUntil: (promise) => ctx.waitUntil(promise) }, () => handler(req, res));
+    await requestContext.run({ waitUntil: (promise) => ctx.waitUntil(promise), keys }, () => handler(req, res));
   } catch (err) {
     console.error(`[${url.pathname}]`, err);
     return Response.json({ error: "Internal error" }, { status: 500 });
