@@ -21,9 +21,12 @@ auth:
   api_url_production: /api
 
 sites:
+  # domain_contains: comma-separated domains matched against whole parts of the host name, never the
+  # path or query. bcd.com matches bcd.com and www.bcd.com, not abcd.com. The first site that matches wins.
   model.earth:
     title: "Model Earth"
     base_url: "https://model.earth"
+    domain_contains: "model.earth, cloud.model.earth"
     logo: "https://model.earth/localsite/img/logo/modelearth/model-earth.png"
     favicon: "/localsite/img/logo/modelearth/model-earth.png"
   neighborhood.org:
