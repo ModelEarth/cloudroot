@@ -1,0 +1,7 @@
+# Response headers for the Worker's static files (Cloudflare reads this file and doesn't serve it).
+# localsite can be loaded from another site, such as The Veil's own Vercel site (veil/code/index.html), and then
+# fetches its header, footer and template and the site config from here, which needs CORS.
+/localsite/*
+  Access-Control-Allow-Origin: *
+/support/site/config.yaml
+  Access-Control-Allow-Origin: *
