@@ -95,3 +95,6 @@ venv/
 !/veil/code/lib/finale.js
 /veil/**/*.md
 /veil/how-it-was-made
+# Its Vercel setup (veil/AGENTS.md)
+/veil/automation
+/veil/.env*

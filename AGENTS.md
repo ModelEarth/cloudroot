@@ -58,6 +58,8 @@ Deploying to Cloudflare and to Vercel is simply pushing to `main` on GitHub. Git
 
 Before pushing, show the user what will be committed and confirm, since a push publishes the live site. Don't run `npx wrangler deploy` locally: it skips the secrets the workflow pushes from GitHub. More details are in README.md.
 
+The Veil (veil/, a separate clone of a private repo) also deploys as its own Vercel site. Its setup is in veil/AGENTS.md.
+
 ## Git Commits
 
 Never add Claude Code attribution or co-authored-by lines to commits.
