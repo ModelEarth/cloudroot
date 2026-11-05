@@ -32,7 +32,8 @@ sites:
   neighborhood.org:
     title: "Neighborhood"
     base_url: "https://neighborhood.org"
-    domain_contains: "neighborhood.org"
+    # The vercel.app hosts are The Veil's own Vercel sites, which load localsite from neighborhood.org (veil/AGENTS.md).
+    domain_contains: "neighborhood.org, veil-wine-iota.vercel.app, veil-planetlive.vercel.app, senarastoryenginev1cosmos.vercel.app"
     favicon: "/localsite/img/logo/neighborhood/favicon.png"
     # The earth icon in the header in place of the logo, left of the site title (localsite/js/navigation.js)
     header_icon: earth

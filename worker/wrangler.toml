@@ -36,8 +36,9 @@ command = "node scripts/veil-mount.mjs"
 
 [vars]
 # Other origins whose pages may call this API from a browser, with cookies.
-# Pages served by this Worker are same-origin and need no entry.
-ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:3701,http://localhost:8887,http://localhost:8888"
+# Pages served by this Worker are same-origin and need no entry. The vercel.app ones are The Veil's own Vercel
+# sites (veil/AGENTS.md), whose voice widget talks to Claude here.
+ALLOWED_ORIGINS = "https://model.earth,http://localhost:3700,http://localhost:3701,http://localhost:8887,http://localhost:8888,https://veil-wine-iota.vercel.app,https://veil-planetlive.vercel.app,https://senarastoryenginev1cosmos.vercel.app"
 # Where tonic's transcript webhook opens pull requests (tonic/README.md).
 ARCHIVIST_REPO = "Earthscape/archivist1"
 
