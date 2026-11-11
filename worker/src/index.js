@@ -32,7 +32,7 @@
  */
 
 import { handleChat } from "./chat.js";
-import { handleKeyStatus, handlePublicKey, handleValidateKey } from "./keys.js";
+import { handleKeyStatus, handlePublicKey, handleValidateKey, openProviderKeyHeader } from "./keys.js";
 import { handleClaudeVoice, CLAUDE_VOICE_PATH } from "../../engine/worker/claude-voice-api.js";
 import { siteCodeTools } from "./site-code.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
@@ -53,6 +53,11 @@ import { corsHeaders, json, withCors } from "./http.js";
 async function routeApi(request, env, ctx, url) {
   const path = url.pathname;
   const isGet = request.method === "GET";
+
+  // A visitor's key that the keys page encrypted for this server (keys.js).
+  const opened = await openProviderKeyHeader(request, env, path);
+  if (opened instanceof Response) return opened;
+  request = opened;
 
   if (path === "/api/chat") return handleChat(request, env);
   // Off until the TEAM_PASSPHRASE secret is set, so the API key isn't open to everyone (engine/shared/passphrase.js).

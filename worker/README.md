@@ -198,7 +198,7 @@ overwritten.
 | `POSTGRES_URL` | same | email/password sign-in, stored users |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub sign-in (GitHub reserves the `GITHUB_` prefix) |
 | `GOOGLE_`, `MICROSOFT_`, `LINKEDIN_`, `DISCORD_`, `FACEBOOK_` + `CLIENT_ID` / `CLIENT_SECRET` | same | each social provider |
-| `BROWSER_ENCRYPTION_PRIVATE_KEY` | same | `/api/public-key` |
+| `BROWSER_ENCRYPTION_PRIVATE_KEY` | same | `/api/public-key` and opening visitors' encrypted keys. A PKCS#8 PEM: `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048`. Replacing it makes saved keys unreadable, so visitors must enter them again. |
 | `CMS_GITHUB_CLIENT_ID`, `CMS_GITHUB_CLIENT_SECRET` | same | `/api/cms/*`, the CMS's GitHub sign-in |
 | `VEIL_REPO_TOKEN` | same | the voice widget reading the site's code and opening pull requests on DesktopFolders/veil (also clones The Veil in the deploy) |
 
