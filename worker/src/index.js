@@ -34,6 +34,7 @@
 import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey, openProviderKeyHeader } from "./keys.js";
 import { handleClaudeVoice, CLAUDE_VOICE_PATH } from "../../engine/worker/claude-voice-api.js";
+import { handleTeamPassphrase, PASSPHRASE_PATH } from "../../engine/shared/passphrase.js";
 import { siteCodeTools } from "./site-code.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
 import { handleCmsAuth, isCmsAuthPath } from "./cms-auth.js";
@@ -63,6 +64,8 @@ async function routeApi(request, env, ctx, url) {
   // Off until the TEAM_PASSPHRASE secret is set, so the API key isn't open to everyone (engine/shared/passphrase.js).
   // With the passphrase, Claude can read the site's code from GitHub and open pull requests on The Veil.
   if (path === CLAUDE_VOICE_PATH) return handleClaudeVoice(request, env, ctx, { passphrase: true, tools: siteCodeTools });
+  // Trades the team passphrase for a cookie page scripts can't read (engine/shared/passphrase.js).
+  if (path === PASSPHRASE_PATH) return handleTeamPassphrase(request, env);
   if ((path === "/api/key-status" || path === "/api/server-keys") && isGet) return handleKeyStatus(env);
   if (path === "/api/public-key" && isGet) return handlePublicKey(env);
   if (path === "/api/validate-key") return handleValidateKey(request, env);

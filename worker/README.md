@@ -41,6 +41,7 @@ code; every other path is served straight from the files.
 | `GET /api/key-status`, `/api/server-keys` | Which provider keys the Worker holds (ids only) | `src/keys.js` |
 | `GET /api/public-key` | Public JWK of `BROWSER_ENCRYPTION_PRIVATE_KEY` (404 when unset) | `src/keys.js` |
 | `POST /api/validate-key` | Checks a provider key against the provider's API | `src/keys.js` |
+| `POST /api/team-passphrase` | Trades the team passphrase for a cookie page scripts can't read (`DELETE` clears it) | `../engine/shared/passphrase.js` |
 | `/api/auth/*` | Sign-in (BetterAuth): sign-up, sign-in, sign-out, session, OAuth callbacks | `src/auth/` |
 | `GET /api/auth/configured-providers`, `/api/auth/db-status` | Which social providers are set up; database status | `src/auth/` |
 | `GET /api/oauth/:provider?redirect=`, `/api/oauth/relay` | Social sign-in by navigation, for pages on other origins | `src/auth/` |
@@ -194,7 +195,7 @@ overwritten.
 |---|---|---|
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | same | `/api/chat` (`ANTHROPIC_API_KEY` also `/api/claude-voice`) |
 | `TEAM_PASSPHRASE` | same | `/api/chat`, `/api/claude-voice` (12+ chars) |
-| `BETTER_AUTH_SECRET` | same | all sign-in (min 32 chars) |
+| `BETTER_AUTH_SECRET` | same | all sign-in (min 32 chars), and signing the team passphrase's cookie |
 | `POSTGRES_URL` | same | email/password sign-in, stored users |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub sign-in (GitHub reserves the `GITHUB_` prefix) |
 | `GOOGLE_`, `MICROSOFT_`, `LINKEDIN_`, `DISCORD_`, `FACEBOOK_` + `CLIENT_ID` / `CLIENT_SECRET` | same | each social provider |

@@ -5,3 +5,12 @@
   Access-Control-Allow-Origin: *
 /support/site/config.yaml
   Access-Control-Allow-Origin: *
+
+# The keys page, where people type API keys (keys/key-manager.js). Scripts and connections are limited to this
+# site, plus the feather icons on unpkg.com and Cloudflare's own analytics beacon, so injected code can't load
+# scripts from elsewhere or send keys to another host with fetch. localsite's header uses inline scripts, onclick
+# attributes and inline styles, and jQuery evals the scripts in its template, so those stay allowed. Other pages
+# share this origin and its storage, so this protects the moment a key is typed here, not keys a page elsewhere
+# on the site could read.
+/keys/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://cloudflareinsights.com; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'

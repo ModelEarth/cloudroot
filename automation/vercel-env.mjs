@@ -15,13 +15,16 @@
 // --config adds the vars listed in a JSON file such as
 // chat/scripts/vercel-env.config.json (the social sign-in keys):
 //   { "environment": "production", "vars": [{ "source": "X", "target": "X" }] }
+// --only-config sets just those, leaving the databases as they are, as in
+//   node automation/vercel-env.mjs --config chat/scripts/vercel-keys.config.json --only-config
+// (BROWSER_ENCRYPTION_PRIVATE_KEY, which encrypts visitors' AI keys for the server).
 //
 // Needs VERCEL_API_TOKEN in the env file: https://vercel.com/account/tokens,
 // scoped to the team that owns the projects. Projects are found in your
 // personal account or any team the token reaches; VERCEL_TEAM_ID in the env
 // file narrows that to one team.
 //
-// Usage: node automation/vercel-env.mjs [project ...] [--config <file>]
+// Usage: node automation/vercel-env.mjs [project ...] [--config <file>] [--only-config]
 //          [--env <env-file>] [--no-deploy] [--no-wait] [--list]
 //   project      Vercel project names; default VERCEL_PROJECTS in the env
 //                file (comma-separated). With none, lists the projects.
@@ -65,7 +68,8 @@ if (!projectNames.length) {
 
 // target (on Vercel) <- source (in the env file), and the environments a
 // new variable gets.
-const vars = [
+if (flags.has("--only-config") && !configArg) fail("--only-config needs --config <file>.");
+const vars = flags.has("--only-config") ? [] : [
   { source: "CHAT_POSTGRES_URL", target: "CHAT_POSTGRES_URL", environments: NEW_VAR_TARGETS },
   { source: "CHAT_POSTGRES_URL", target: "POSTGRES_URL", environments: NEW_VAR_TARGETS },
   { source: "AUTH_POSTGRES_URL", target: "AUTH_POSTGRES_URL", environments: NEW_VAR_TARGETS },
