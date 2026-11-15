@@ -19,7 +19,13 @@ Once the site responds (e.g. `curl -s -o /dev/null -w "%{http_code}" http://loca
 
 open -a "Brave Browser" http://localhost:3701
 
-When started from ../desktop/AGENTS.md, follow its browser guidance instead (a kiosk window by default for CloudRoot).
+When "as kiosk" is requested (e.g. "Start CloudRoot as kiosk"), open it in a full-screen kiosk window instead, with no address bar or tabs:
+
+open -na "Brave Browser" --args --kiosk --user-data-dir="$HOME/brave-kiosk" --no-first-run http://localhost:3701
+
+The separate profile (`--user-data-dir`) lets the kiosk window open while Brave is already running. Cmd+Q closes it. More details are in "Kiosk Mode" in ../desktop/AGENTS.md.
+
+When started from ../desktop/AGENTS.md, follow its browser guidance instead.
 
 ### 1. CloudRoot for Cloudflare (recommended) - Port 3701
 
