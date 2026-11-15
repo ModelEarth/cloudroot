@@ -15,6 +15,12 @@ If the request already names one (e.g. "Start CloudRoot 3701", "start cloudflare
 
 Run all commands below from the ../CloudRoot folder.
 
+With either choice, also start the voice bridge on port 3703, which answers the voice widget (engine/claude-voice.js) through the Claude Code CLI. On localhost the widget sends its questions to the bridge and not to the site's own port, so without it the widget says it can't reach Claude:
+
+node engine/server/local-bridge.mjs
+
+Check it with `lsof -iTCP:3703 -sTCP:LISTEN`. More details are in engine/README.md.
+
 Once the site responds (e.g. `curl -s -o /dev/null -w "%{http_code}" http://localhost:3701/`), open it in a browser tab at the chosen port. Use Brave when it's installed, otherwise the default browser:
 
 open -a "Brave Browser" http://localhost:3701
