@@ -28,7 +28,18 @@ sites:
     base_url: "https://model.earth"
     domain_contains: "model.earth, cloud.model.earth"
     logo: "https://model.earth/localsite/img/logo/modelearth/model-earth.png"
+    # The logo is the globe alone, so the header shows the site title to its right (localsite/js/navigation.js)
+    logo_title: true
     favicon: "/localsite/img/logo/modelearth/model-earth.png"
+  model.georgia:
+    title: "Model Georgia"
+    base_url: "https://model.georgia.org"
+    domain_contains: "model.georgia.org"
+    favicon: "/localsite/img/logo/states/GA-favicon.png"
+    # The voice agent's name, shown in place of Claude (engine/claude-voice.js)
+    agent_name: "Georgia"
+    sideNavLocal: false
+    sideNavLive: false
   neighborhood.org:
     title: "Neighborhood"
     base_url: "https://neighborhood.org"
@@ -44,8 +55,12 @@ sites:
     home_url: "https://tsqatl.maestropro.io"
     domain_contains: "maestro"
     logo: "https://tsqatl.maestropro.io/common/brand.png"
+    # The logo with white lettering, for dark mode (localsite/js/navigation.js)
+    logo_dark: "/project/goals/img/maestro-logo-dark.png"
     logo_height: "70px"
     favicon: "https://tsqatl.maestropro.io/favicon.ico"
+    # The voice agent's names, comma-separated: the first is shown ("Say “Ok Little Bird”"), and any starts a conversation (engine/claude-voice.js)
+    agent_name: "Little Bird, Sparrow"
     sideNavLive: false
 
 # yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
