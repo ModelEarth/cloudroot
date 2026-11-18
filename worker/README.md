@@ -38,6 +38,7 @@ code; every other path is served straight from the files.
 |---|---|---|
 | `POST /api/chat` | LLM proxy (Anthropic, OpenAI), with the team passphrase | `src/chat.js` |
 | `POST /api/claude-voice` | The voice widget, with the team passphrase | `engine/worker/claude-voice-api.js` |
+| `GET /api/claude-voice/status`, `POST /api/claude-voice/transcribe` | The voice widget's speech to text (Whisper on Workers AI, the `AI` binding) for browsers without their own, such as Brave, with the team passphrase | `engine/worker/claude-voice-api.js` |
 | `GET /api/key-status`, `/api/server-keys` | Which provider keys the Worker holds (ids only) | `src/keys.js` |
 | `GET /api/public-key` | Public JWK of `BROWSER_ENCRYPTION_PRIVATE_KEY` (404 when unset) | `src/keys.js` |
 | `POST /api/validate-key` | Checks a provider key against the provider's API | `src/keys.js` |
@@ -230,6 +231,11 @@ folder or submodule. It reads config from your env file (`automation/paths.yaml`
 `AUTH_POSTGRES_URL` as `POSTGRES_URL`. To use other values locally, copy
 `.dev.vars.example` to `.dev.vars` (git-ignored), which then takes its place.
 Production uses the config pushed by the workflow.
+
+It runs wrangler with `--local`, which leaves out remote bindings such as
+Workers AI (`[ai]` in `wrangler.toml`), since they'd need a Cloudflare login.
+Only the voice widget's speech to text uses it, and locally the voice bridge
+does that. `npm run dev -- --remote-bindings` keeps them, after `npx wrangler login`.
 
 The everyday local server is still `PORT=3700 node chat/server.mjs`, which
 serves the same paths from the webroot. Run `npm run dev` here alongside it

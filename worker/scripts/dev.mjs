@@ -114,7 +114,13 @@ function linkWebroot() {
 }
 
 let env = { ...process.env };
-const args = ["dev", "--assets", linkWebroot(), ...process.argv.slice(2)];
+// --local: remote bindings off, so it starts without a Cloudflare login. The AI binding (Workers AI, wrangler.toml)
+// is then left out, which only the voice widget's speech to text uses on the deployed site; locally the voice
+// bridge does that (engine/server/local-bridge.mjs). `npm run dev -- --remote-bindings` keeps them (after
+// `npx wrangler login`), and wrangler's own --remote runs the whole Worker on Cloudflare.
+const passed = process.argv.slice(2).filter((a) => a !== "--remote-bindings");
+const keepRemote = passed.length < process.argv.length - 2 || passed.some((a) => a === "--remote" || a === "-r");
+const args = ["dev", "--assets", linkWebroot(), ...(keepRemote ? [] : ["--local"]), ...passed];
 
 if (existsSync(join(WORKER_DIR, ".dev.vars"))) {
   console.log("[dev] Using worker/.dev.vars");

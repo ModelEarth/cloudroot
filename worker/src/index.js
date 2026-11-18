@@ -12,6 +12,9 @@
  *                                       ANTHROPIC_API_KEY for visitors who enter TEAM_PASSPHRASE,
  *                                       who can also ask about the site's code (read from GitHub)
  *                                       and have Claude open pull requests on The Veil (site-code.js)
+ *   GET  /api/claude-voice/status       Whether speech to text is on (the AI binding)
+ *   POST /api/claude-voice/transcribe   A spoken turn (WAV) to text with Whisper on Workers AI, for browsers
+ *                                       without working speech input (Brave, Firefox), with TEAM_PASSPHRASE
  *   GET  /api/key-status, /api/server-keys, /api/public-key
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)
@@ -33,7 +36,7 @@
 
 import { handleChat } from "./chat.js";
 import { handleKeyStatus, handlePublicKey, handleValidateKey, openProviderKeyHeader } from "./keys.js";
-import { handleClaudeVoice, CLAUDE_VOICE_PATH } from "../../engine/worker/claude-voice-api.js";
+import { handleClaudeVoice, isClaudeVoicePath } from "../../engine/worker/claude-voice-api.js";
 import { handleTeamPassphrase, PASSPHRASE_PATH } from "../../engine/shared/passphrase.js";
 import { siteCodeTools } from "./site-code.js";
 import { handleAuth, isAuthPath } from "./auth/index.js";
@@ -63,7 +66,9 @@ async function routeApi(request, env, ctx, url) {
   if (path === "/api/chat") return handleChat(request, env);
   // Off until the TEAM_PASSPHRASE secret is set, so the API key isn't open to everyone (engine/shared/passphrase.js).
   // With the passphrase, Claude can read the site's code from GitHub and open pull requests on The Veil.
-  if (path === CLAUDE_VOICE_PATH) return handleClaudeVoice(request, env, ctx, { passphrase: true, tools: siteCodeTools });
+  // .../status and .../transcribe too: speech to text with Workers AI's Whisper (the AI binding in wrangler.toml), for
+  // browsers without working speech input, such as Brave.
+  if (isClaudeVoicePath(path)) return handleClaudeVoice(request, env, ctx, { passphrase: true, tools: siteCodeTools });
   // Trades the team passphrase for a cookie page scripts can't read (engine/shared/passphrase.js).
   if (path === PASSPHRASE_PATH) return handleTeamPassphrase(request, env);
   if ((path === "/api/key-status" || path === "/api/server-keys") && isGet) return handleKeyStatus(env);
