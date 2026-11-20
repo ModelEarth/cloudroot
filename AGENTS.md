@@ -74,4 +74,4 @@ The Veil (veil/, a separate clone of a private repo) also deploys as its own Ver
 
 ## Git Commits
 
-Never add Claude Code attribution or co-authored-by lines to commits.
+Never add attribution for Claude or any other AI agent to commits or pull requests: no co-authored-by lines and no "Generated with" text.
