@@ -35,7 +35,7 @@ command = "node scripts/veil-mount.mjs"
 # secrets — see .github/workflows/deploy-worker.yml and README.md.
 
 # Workers AI, for the voice widget's speech to text (Whisper) in browsers without working speech input, such as
-# Brave (engine/worker/claude-voice-api.js, /api/claude-voice/transcribe). wrangler dev uses Cloudflare's for real.
+# Brave (engine/worker/voice-chat-api.js, /api/voice-chat/transcribe). wrangler dev uses Cloudflare's for real.
 [ai]
 binding = "AI"
 

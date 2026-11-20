@@ -80,7 +80,7 @@ venv/
 /project/models/params
 
 # engine's local voice bridge (node engine/server/local-bridge.mjs): the page script
-# engine/claude-voice.js is published, its server isn't.
+# engine/js/voice-chat.js is published, its server isn't.
 /engine/server
 
 # veil/code (The Veil game) is published at /veil/code/, with its API run by the Worker at

@@ -37,8 +37,8 @@ code; every other path is served straight from the files.
 | Path | Purpose | Source |
 |---|---|---|
 | `POST /api/chat` | LLM proxy (Anthropic, OpenAI), with the team passphrase | `src/chat.js` |
-| `POST /api/claude-voice` | The voice widget, with the team passphrase | `engine/worker/claude-voice-api.js` |
-| `GET /api/claude-voice/status`, `POST /api/claude-voice/transcribe` | The voice widget's speech to text (Whisper on Workers AI, the `AI` binding) for browsers without their own, such as Brave, with the team passphrase | `engine/worker/claude-voice-api.js` |
+| `POST /api/voice-chat` | The voice widget, with the team passphrase | `engine/worker/voice-chat-api.js` |
+| `GET /api/voice-chat/status`, `POST /api/voice-chat/transcribe` | The voice widget's speech to text (Whisper on Workers AI, the `AI` binding) for browsers without their own, such as Brave, with the team passphrase | `engine/worker/voice-chat-api.js` |
 | `GET /api/key-status`, `/api/server-keys` | Which provider keys the Worker holds (ids only) | `src/keys.js` |
 | `GET /api/public-key` | Public JWK of `BROWSER_ENCRYPTION_PRIVATE_KEY` (404 when unset) | `src/keys.js` |
 | `POST /api/validate-key` | Checks a provider key against the provider's API | `src/keys.js` |
@@ -64,16 +64,16 @@ Worker's `GEMINI_API_KEY` instead. Both are synced from the env file by
 editor) writes to local disk, so it stays local-only; on Cloudflare it
 returns 404 and the editor falls back to copying to the clipboard.
 
-`/api/chat` and `/api/claude-voice` spend the site's own LLM keys, so
+`/api/chat` and `/api/voice-chat` spend the site's own LLM keys, so
 each request needs the `TEAM_PASSPHRASE` secret (12+ characters) in the
 `X-Team-Passphrase` header (`engine/shared/passphrase.js`). Without it
 they reply 401; until the secret is set, 503. The voice widget
-(`engine/claude-voice.js`) asks for it once and keeps it in the
+(`engine/js/voice-chat.js`) asks for it once and keeps it in the
 browser's localStorage as `team-passphrase`, for every tab on that
 site, where other pages can read it too. Locally the widget uses the
 Claude Code CLI bridge (`engine/server/local-bridge.mjs`) instead.
 
-`/api/claude-voice` answers with Claude, then `GEMINI_API_KEY` when
+`/api/voice-chat` answers with Claude, then `GEMINI_API_KEY` when
 Claude can't (invalid key, no credits, busy), and says why on the page.
 When both fail, or a visitor has no passphrase, the widget uses an AI key
 the visitor saved on `/keys/` in that browser (Claude, Gemini, OpenAI,
@@ -194,8 +194,8 @@ overwritten.
 
 | Worker secret | GitHub secret | Needed for |
 |---|---|---|
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | same | `/api/chat` (`ANTHROPIC_API_KEY` also `/api/claude-voice`) |
-| `TEAM_PASSPHRASE` | same | `/api/chat`, `/api/claude-voice` (12+ chars) |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | same | `/api/chat` (`ANTHROPIC_API_KEY` also `/api/voice-chat`) |
+| `TEAM_PASSPHRASE` | same | `/api/chat`, `/api/voice-chat` (12+ chars) |
 | `BETTER_AUTH_SECRET` | same | all sign-in (min 32 chars), and signing the team passphrase's cookie |
 | `POSTGRES_URL` | same | email/password sign-in, stored users |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `GH_CLIENT_ID`, `GH_CLIENT_SECRET` | GitHub sign-in (GitHub reserves the `GITHUB_` prefix) |

@@ -105,7 +105,7 @@ jobs:
           FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ARTS_ENGINE_PASSPHRASE: ${{ secrets.ARTS_ENGINE_PASSPHRASE }}
-          # The team's passphrase: entering it lets the voice widget (engine/claude-voice.js) use ANTHROPIC_API_KEY.
+          # The team's passphrase: entering it lets the voice widget (engine/js/voice-chat.js) use ANTHROPIC_API_KEY.
           TEAM_PASSPHRASE: ${{ secrets.TEAM_PASSPHRASE }}
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           ARCHIVIST_TOKEN: ${{ secrets.ARCHIVIST_TOKEN }}

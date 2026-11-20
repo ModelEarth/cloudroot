@@ -1,5 +1,5 @@
 // The site's source code on GitHub, for the voice widget's Claude on Cloudflare
-// (handleClaudeVoice's `tools` option, engine/worker/claude-voice-api.js). Locally
+// (handleVoiceChat's `tools` option, engine/worker/voice-chat-api.js). Locally
 // the bridge's Claude Code CLI reads the webroot's files; here there are none, so
 // Claude reads them from GitHub instead, and can propose changes to The Veil as
 // pull requests.

@@ -15,7 +15,7 @@ If the request already names one (e.g. "Start CloudRoot 3701", "start cloudflare
 
 Run all commands below from the ../CloudRoot folder.
 
-With either choice, also start the voice bridge on port 3703, which answers the voice widget (engine/claude-voice.js) through the Claude Code CLI. On localhost the widget sends its questions to the bridge and not to the site's own port, so without it the widget says it can't reach Claude:
+With either choice, also start the voice bridge on port 3703, which answers the voice widget (engine/js/voice-chat.js) through the Claude Code CLI. On localhost the widget sends its questions to the bridge and not to the site's own port, so without it the widget says it can't reach Claude:
 
 node engine/server/local-bridge.mjs
 

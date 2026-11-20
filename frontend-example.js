@@ -3,7 +3,7 @@
 // https://cloud.model.earth/api/chat (that origin must be in ALLOWED_ORIGINS).
 // Swap `provider` to "openai" or "anthropic" per request.
 // The keys are the site's own, so each request needs the team's passphrase
-// (TEAM_PASSPHRASE). Once it's entered, by the voice widget (engine/claude-voice.js)
+// (TEAM_PASSPHRASE). Once it's entered, by the voice widget (engine/js/voice-chat.js)
 // or with rememberPassphrase() below, a cookie that page scripts can't read stands
 // in for it, so it's never kept in the browser.
 
