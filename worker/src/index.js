@@ -15,6 +15,10 @@
  *   GET  /api/voice-chat/status         Whether speech to text is on (the AI binding)
  *   POST /api/voice-chat/transcribe     A spoken turn (WAV) to text with Whisper on Workers AI, for browsers
  *                                       without working speech input (Brave, Firefox), with TEAM_PASSPHRASE
+ *   GET  /api/voice-chat/voices         The widget's natural voices: Deepgram Aura-2 (the AI binding), and Grok,
+ *                                       ElevenLabs, OpenAI and Google Cloud with their keys (engine/shared/tts/)
+ *   POST /api/voice-chat/speak          One sentence as audio in one of those voices, with TEAM_PASSPHRASE or the
+ *                                       visitor's own key, kept in the Cache API
  *   GET  /api/key-status, /api/server-keys, /api/public-key
  *   POST /api/validate-key              "keys" widget endpoints (keys.js)
  *   /api/auth/*, /api/oauth/*           sign-in (auth/index.js)

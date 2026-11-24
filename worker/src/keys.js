@@ -29,14 +29,15 @@ export function handleKeyStatus(env) {
 }
 
 // Providers whose keys the Worker can use from an encrypted value: each has a
-// fixed address in requests/engine/worker/engine.js and engine/worker/voice-chat-api.js.
-const SERVER_PROVIDERS = ["anthropic", "google", "openai", "xai", "groq", "together", "fireworks", "mistral", "perplexity", "deepseek", "pollinations"];
+// fixed address in requests/engine/worker/engine.js and engine/worker/voice-chat-api.js, or for voices
+// (elevenlabs, google-tts) in engine/shared/tts/.
+const SERVER_PROVIDERS = ["anthropic", "google", "openai", "xai", "groq", "together", "fireworks", "mistral", "perplexity", "deepseek", "pollinations", "elevenlabs", "google-tts"];
 
 const ENCRYPTED_PREFIX = "rsa:";
 const RSA_OAEP = { name: "RSA-OAEP", hash: "SHA-256" };
 
 function isServerKeyRoute(path) {
-  return path === "/api/models" || path === "/api/voice-chat" || path === "/api/generate/text"
+  return path === "/api/models" || path === "/api/voice-chat" || path === "/api/voice-chat/speak" || path === "/api/generate/text"
     || path === "/api/generate/image" || path === "/api/generate/video" || path.startsWith("/api/generate/video/");
 }
 
